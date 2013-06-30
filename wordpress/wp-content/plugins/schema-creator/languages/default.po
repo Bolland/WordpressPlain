@@ -1,0 +1,1732 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: schema\n"
+"POT-Creation-Date: 2013-01-02 11:36-0500\n"
+"PO-Revision-Date: 2013-01-02 11:36-0500\n"
+"Last-Translator: Andrew Norcross <andrew@andrewnorcross.com>\n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 1.5.4\n"
+"X-Poedit-KeywordsList: _;__;_e;gettext;gettext_noop\n"
+"X-Poedit-Basepath: ../\n"
+"X-Poedit-SearchPath-0: .\n"
+"X-Poedit-SearchPath-1: lib\n"
+
+#: schema-creator.php:97
+msgid "Settings"
+msgstr ""
+
+#: schema-creator.php:172
+msgid "Schema Display Options"
+msgstr ""
+
+#: schema-creator.php:194
+msgid "Disable body itemscopes on this post."
+msgstr ""
+
+#: schema-creator.php:199
+msgid "Disable content itemscopes on this post."
+msgstr ""
+
+#: schema-creator.php:240 schema-creator.php:321
+msgid "Schema Creator"
+msgstr ""
+
+#: schema-creator.php:291
+msgid "Check to remove Schema Creator CSS from the microdata HTML output."
+msgstr ""
+
+#: schema-creator.php:293
+msgid ""
+"Check to add the <code>http://schema.org/Blog</code> schema itemtype to the "
+"BODY element on your pages and posts. Your theme must have the "
+"<code>body_class</code> template tag for this to work."
+msgstr ""
+
+#: schema-creator.php:295
+msgid ""
+"Check to add the <code>http://schema.org/BlogPosting</code> schema itemtype "
+"to the content wrapper on your pages and posts."
+msgstr ""
+
+#: schema-creator.php:317
+msgid "Schema Creator Settings"
+msgstr ""
+
+#: schema-creator.php:321
+msgid "By default, the"
+msgstr ""
+
+#: schema-creator.php:321
+msgid ""
+"http://schema-creator.org/?"
+"utm_source=wp&utm_medium=plugin&utm_campaign=schema"
+msgstr ""
+
+#: schema-creator.php:321 schema-creator.php:413
+msgid ""
+"http://raventools.com/?utm_source=wp&utm_medium=plugin&utm_campaign=schema"
+msgstr ""
+
+#: schema-creator.php:321 schema-creator.php:413
+msgid "Raven Internet Marketing Tools"
+msgstr ""
+
+#: schema-creator.php:321
+msgid ""
+"includes unique CSS IDs and classes. You can reference the CSS to control "
+"the style of the HTML that the Schema Creator plugin outputs."
+msgstr ""
+
+#: schema-creator.php:323
+msgid ""
+"The plugin can also automatically include <code>http://schema.org/Blog</"
+"code> and <code>http://schema.org/BlogPosting</code> schemas to your pages "
+"and posts."
+msgstr ""
+
+#: schema-creator.php:325
+msgid "Google also offers a"
+msgstr ""
+
+#: schema-creator.php:325
+msgid "http://www.google.com/webmasters/tools/richsnippets/"
+msgstr ""
+
+#: schema-creator.php:325
+msgid "Rich Snippet Testing tool"
+msgstr ""
+
+#: schema-creator.php:325
+msgid "to review and test the schemas in your pages and posts."
+msgstr ""
+
+#: schema-creator.php:344
+msgid "Exclude default CSS for schema output"
+msgstr ""
+
+#: schema-creator.php:349
+msgid "Apply itemprop &amp; itemtype to main body tag"
+msgstr ""
+
+#: schema-creator.php:354
+msgid "Apply itemscope &amp; itemtype to content wrapper"
+msgstr ""
+
+#: schema-creator.php:358
+msgid "Save Changes"
+msgstr ""
+
+#: schema-creator.php:413
+msgid "This plugin brought to you by the fine folks at"
+msgstr ""
+
+#: schema-creator.php:661 schema-creator.php:821 schema-creator.php:885
+msgid "P.O. Box:"
+msgstr ""
+
+#: schema-creator.php:696 schema-creator.php:920
+msgid "Phone:"
+msgstr ""
+
+#: schema-creator.php:699
+msgid "DOB:"
+msgstr ""
+
+#: schema-creator.php:724
+msgid "Brand:"
+msgstr ""
+
+#: schema-creator.php:727
+msgid "Manufacturer:"
+msgstr ""
+
+#: schema-creator.php:730
+msgid "Model:"
+msgstr ""
+
+#: schema-creator.php:733
+msgid "Product ID:"
+msgstr ""
+
+#: schema-creator.php:737 schema-creator.php:2068
+msgid "based on"
+msgstr ""
+
+#: schema-creator.php:738 schema-creator.php:2070
+msgid "reviews"
+msgstr ""
+
+#: schema-creator.php:744
+msgid "Review:"
+msgstr ""
+
+#: schema-creator.php:747
+msgid "total reviews"
+msgstr ""
+
+#: schema-creator.php:785 schema-creator.php:789
+msgid "Starts:"
+msgstr ""
+
+#: schema-creator.php:792
+msgid "Ends:"
+msgstr ""
+
+#: schema-creator.php:799
+msgid "hours:"
+msgstr ""
+
+#: schema-creator.php:800
+msgid "and"
+msgstr ""
+
+#: schema-creator.php:800 schema-creator.php:1107 schema-creator.php:1131
+#: schema-creator.php:1144 schema-creator.php:1168
+msgid "minutes"
+msgstr ""
+
+#: schema-creator.php:802
+msgid "Duration:"
+msgstr ""
+
+#: schema-creator.php:923
+msgid "Fax:"
+msgstr ""
+
+#: schema-creator.php:949
+msgid "Directed by:"
+msgstr ""
+
+#: schema-creator.php:952
+msgid "Produced by:"
+msgstr ""
+
+#: schema-creator.php:955
+msgid "Starring:"
+msgstr ""
+
+#: schema-creator.php:988 schema-creator.php:1044
+msgid "Written by:"
+msgstr ""
+
+#: schema-creator.php:991
+msgid "Published by:"
+msgstr ""
+
+#: schema-creator.php:994 schema-creator.php:1047
+msgid "Date Published:"
+msgstr ""
+
+#: schema-creator.php:997
+msgid "Edition:"
+msgstr ""
+
+#: schema-creator.php:1000
+msgid "ISBN:"
+msgstr ""
+
+#: schema-creator.php:1003
+msgid "Available in:"
+msgstr ""
+
+#: schema-creator.php:1006 schema-creator.php:2134
+msgid "Ebook"
+msgstr ""
+
+#: schema-creator.php:1009 schema-creator.php:2138
+msgid "Paperback"
+msgstr ""
+
+#: schema-creator.php:1012 schema-creator.php:2142
+msgid "Hardcover"
+msgstr ""
+
+#: schema-creator.php:1063
+msgid "stars"
+msgstr ""
+
+#: schema-creator.php:1079
+msgid "Recipe Image"
+msgstr ""
+
+#: schema-creator.php:1089
+msgid "By"
+msgstr ""
+
+#: schema-creator.php:1090
+msgid "on"
+msgstr ""
+
+#: schema-creator.php:1095
+msgid "by"
+msgstr ""
+
+#: schema-creator.php:1106 schema-creator.php:1119 schema-creator.php:1143
+#: schema-creator.php:1156
+msgid "hours"
+msgstr ""
+
+#: schema-creator.php:1106 schema-creator.php:1119 schema-creator.php:1143
+#: schema-creator.php:1156
+msgid "hour"
+msgstr ""
+
+#: schema-creator.php:1107 schema-creator.php:1131 schema-creator.php:1144
+#: schema-creator.php:1168
+msgid "minute"
+msgstr ""
+
+#: schema-creator.php:1110 schema-creator.php:1122 schema-creator.php:1134
+msgid "Prep Time:"
+msgstr ""
+
+#: schema-creator.php:1147 schema-creator.php:1159 schema-creator.php:1171
+msgid "Cook Time:"
+msgstr ""
+
+#: schema-creator.php:1181
+msgid "Yield:"
+msgstr ""
+
+#: schema-creator.php:1192
+msgid "Nutrition Information:"
+msgstr ""
+
+#: schema-creator.php:1195
+msgid "calories"
+msgstr ""
+
+#: schema-creator.php:1198
+msgid "grams of fat"
+msgstr ""
+
+#: schema-creator.php:1201
+msgid "grams of sugar"
+msgstr ""
+
+#: schema-creator.php:1204
+msgid "milligrams of sodium"
+msgstr ""
+
+#: schema-creator.php:1210
+msgid "Ingredients:"
+msgstr ""
+
+#: schema-creator.php:1220
+msgid "Instructions:"
+msgstr ""
+
+#: schema-creator.php:1260
+msgid "Schema Creator Form"
+msgstr ""
+
+#: schema-creator.php:1264
+msgid "Add Schema"
+msgstr ""
+
+#: schema-creator.php:1601
+msgid "Schema Type"
+msgstr ""
+
+#: schema-creator.php:1603
+msgid "Select A Type"
+msgstr ""
+
+#: schema-creator.php:1604
+msgid "Person"
+msgstr ""
+
+#: schema-creator.php:1605
+msgid "Product"
+msgstr ""
+
+#: schema-creator.php:1606
+msgid "Event"
+msgstr ""
+
+#: schema-creator.php:1607 schema-creator.php:1663
+msgid "Organization"
+msgstr ""
+
+#: schema-creator.php:1608
+msgid "Movie"
+msgstr ""
+
+#: schema-creator.php:1609
+msgid "Book"
+msgstr ""
+
+#: schema-creator.php:1610
+msgid "Review"
+msgstr ""
+
+#: schema-creator.php:1611
+msgid "Recipe"
+msgstr ""
+
+#: schema-creator.php:1617
+msgid "Event Type"
+msgstr ""
+
+#: schema-creator.php:1619 schema-creator.php:1641
+msgid "General"
+msgstr ""
+
+#: schema-creator.php:1620
+msgid "Business"
+msgstr ""
+
+#: schema-creator.php:1621
+msgid "Childrens"
+msgstr ""
+
+#: schema-creator.php:1622
+msgid "Comedy"
+msgstr ""
+
+#: schema-creator.php:1623
+msgid "Dance"
+msgstr ""
+
+#: schema-creator.php:1624
+msgid "Education"
+msgstr ""
+
+#: schema-creator.php:1625
+msgid "Festival"
+msgstr ""
+
+#: schema-creator.php:1626
+msgid "Food"
+msgstr ""
+
+#: schema-creator.php:1627
+msgid "Literary"
+msgstr ""
+
+#: schema-creator.php:1628
+msgid "Music"
+msgstr ""
+
+#: schema-creator.php:1629
+msgid "Sale"
+msgstr ""
+
+#: schema-creator.php:1630
+msgid "Social"
+msgstr ""
+
+#: schema-creator.php:1631
+msgid "Sports"
+msgstr ""
+
+#: schema-creator.php:1632
+msgid "Theater"
+msgstr ""
+
+#: schema-creator.php:1633
+msgid "User Interaction"
+msgstr ""
+
+#: schema-creator.php:1634
+msgid "Visual Arts"
+msgstr ""
+
+#: schema-creator.php:1639
+msgid "Organziation Type"
+msgstr ""
+
+#: schema-creator.php:1642
+msgid "Corporation"
+msgstr ""
+
+#: schema-creator.php:1643
+msgid "School"
+msgstr ""
+
+#: schema-creator.php:1644
+msgid "Government"
+msgstr ""
+
+#: schema-creator.php:1645
+msgid "Local Business"
+msgstr ""
+
+#: schema-creator.php:1646
+msgid "NGO"
+msgstr ""
+
+#: schema-creator.php:1647
+msgid "Performing Group"
+msgstr ""
+
+#: schema-creator.php:1648
+msgid "Sports Team"
+msgstr ""
+
+#: schema-creator.php:1653
+msgid "Name"
+msgstr ""
+
+#: schema-creator.php:1668
+msgid "Job Title"
+msgstr ""
+
+#: schema-creator.php:1673
+msgid "Website"
+msgstr ""
+
+#: schema-creator.php:1678
+msgid "Description"
+msgstr ""
+
+#: schema-creator.php:1683
+msgid "Item Name"
+msgstr ""
+
+#: schema-creator.php:1688
+msgid "Item Review"
+msgstr ""
+
+#: schema-creator.php:1693
+msgid "Director"
+msgstr ""
+
+#: schema-creator.php:1698
+msgid "Productor"
+msgstr ""
+
+#: schema-creator.php:1703
+msgid "Actor"
+msgstr ""
+
+#: schema-creator.php:1707
+msgid "Add Another Actor"
+msgstr ""
+
+#: schema-creator.php:1710
+msgid "Start Date"
+msgstr ""
+
+#: schema-creator.php:1716
+msgid "Start Time"
+msgstr ""
+
+#: schema-creator.php:1721
+msgid "End Date"
+msgstr ""
+
+#: schema-creator.php:1727
+msgid "Duration"
+msgstr ""
+
+#: schema-creator.php:1732
+msgid "Birthday"
+msgstr ""
+
+#: schema-creator.php:1738
+msgid "Address"
+msgstr ""
+
+#: schema-creator.php:1743
+msgid "PO Box"
+msgstr ""
+
+#: schema-creator.php:1748
+msgid "City"
+msgstr ""
+
+#: schema-creator.php:1753
+msgid "State / Region"
+msgstr ""
+
+#: schema-creator.php:1758
+msgid "Postal Code"
+msgstr ""
+
+#: schema-creator.php:1763
+msgid "Country"
+msgstr ""
+
+#: schema-creator.php:1765
+msgid "Select A Country"
+msgstr ""
+
+#: schema-creator.php:1766
+msgid "United States"
+msgstr ""
+
+#: schema-creator.php:1767
+msgid "Canada"
+msgstr ""
+
+#: schema-creator.php:1768
+msgid "Mexico"
+msgstr ""
+
+#: schema-creator.php:1769
+msgid "United Kingdom"
+msgstr ""
+
+#: schema-creator.php:1772
+msgid "Afghanistan"
+msgstr ""
+
+#: schema-creator.php:1773
+msgid "Aland Islands"
+msgstr ""
+
+#: schema-creator.php:1774
+msgid "Albania"
+msgstr ""
+
+#: schema-creator.php:1775
+msgid "Algeria"
+msgstr ""
+
+#: schema-creator.php:1776
+msgid "American Samoa"
+msgstr ""
+
+#: schema-creator.php:1777
+msgid "Andorra"
+msgstr ""
+
+#: schema-creator.php:1778
+msgid "Angola"
+msgstr ""
+
+#: schema-creator.php:1779
+msgid "Anguilla"
+msgstr ""
+
+#: schema-creator.php:1780
+msgid "Antarctica"
+msgstr ""
+
+#: schema-creator.php:1781
+msgid "Antigua And Barbuda"
+msgstr ""
+
+#: schema-creator.php:1782
+msgid "Argentina"
+msgstr ""
+
+#: schema-creator.php:1783
+msgid "Armenia"
+msgstr ""
+
+#: schema-creator.php:1784
+msgid "Aruba"
+msgstr ""
+
+#: schema-creator.php:1785
+msgid "Australia"
+msgstr ""
+
+#: schema-creator.php:1786
+msgid "Austria"
+msgstr ""
+
+#: schema-creator.php:1787
+msgid "Azerbaijan"
+msgstr ""
+
+#: schema-creator.php:1788
+msgid "Bahamas"
+msgstr ""
+
+#: schema-creator.php:1789
+msgid "Bahrain"
+msgstr ""
+
+#: schema-creator.php:1790
+msgid "Bangladesh"
+msgstr ""
+
+#: schema-creator.php:1791
+msgid "Barbados"
+msgstr ""
+
+#: schema-creator.php:1792
+msgid "Belarus"
+msgstr ""
+
+#: schema-creator.php:1793
+msgid "Belgium"
+msgstr ""
+
+#: schema-creator.php:1794
+msgid "Belize"
+msgstr ""
+
+#: schema-creator.php:1795
+msgid "Benin"
+msgstr ""
+
+#: schema-creator.php:1796
+msgid "Bermuda"
+msgstr ""
+
+#: schema-creator.php:1797
+msgid "Bhutan"
+msgstr ""
+
+#: schema-creator.php:1798
+msgid "Bolivia, Plurinational State Of"
+msgstr ""
+
+#: schema-creator.php:1799
+msgid "Bonaire, Sint Eustatius And Saba"
+msgstr ""
+
+#: schema-creator.php:1800
+msgid "Bosnia And Herzegovina"
+msgstr ""
+
+#: schema-creator.php:1801
+msgid "Botswana"
+msgstr ""
+
+#: schema-creator.php:1802
+msgid "Bouvet Island"
+msgstr ""
+
+#: schema-creator.php:1803
+msgid "Brazil"
+msgstr ""
+
+#: schema-creator.php:1804
+msgid "British Indian Ocean Territory"
+msgstr ""
+
+#: schema-creator.php:1805
+msgid "Brunei Darussalam"
+msgstr ""
+
+#: schema-creator.php:1806
+msgid "Bulgaria"
+msgstr ""
+
+#: schema-creator.php:1807
+msgid "Burkina Faso"
+msgstr ""
+
+#: schema-creator.php:1808
+msgid "Burundi"
+msgstr ""
+
+#: schema-creator.php:1809
+msgid "Cambodia"
+msgstr ""
+
+#: schema-creator.php:1810
+msgid "Cameroon"
+msgstr ""
+
+#: schema-creator.php:1811
+msgid "Cape Verde"
+msgstr ""
+
+#: schema-creator.php:1812
+msgid "Cayman Islands"
+msgstr ""
+
+#: schema-creator.php:1813
+msgid "Central African Republic"
+msgstr ""
+
+#: schema-creator.php:1814
+msgid "Chad"
+msgstr ""
+
+#: schema-creator.php:1815
+msgid "Chile"
+msgstr ""
+
+#: schema-creator.php:1816
+msgid "China"
+msgstr ""
+
+#: schema-creator.php:1817
+msgid "Christmas Island"
+msgstr ""
+
+#: schema-creator.php:1818
+msgid "Cocos (Keeling) Islands"
+msgstr ""
+
+#: schema-creator.php:1819
+msgid "Colombia"
+msgstr ""
+
+#: schema-creator.php:1820
+msgid "Comoros"
+msgstr ""
+
+#: schema-creator.php:1821
+msgid "Congo"
+msgstr ""
+
+#: schema-creator.php:1822
+msgid "Congo, The Democratic Republic Of The"
+msgstr ""
+
+#: schema-creator.php:1823
+msgid "Cook Islands"
+msgstr ""
+
+#: schema-creator.php:1824
+msgid "Costa Rica"
+msgstr ""
+
+#: schema-creator.php:1825
+msgid "Cote D'Ivoire"
+msgstr ""
+
+#: schema-creator.php:1826
+msgid "Croatia"
+msgstr ""
+
+#: schema-creator.php:1827
+msgid "Cuba"
+msgstr ""
+
+#: schema-creator.php:1828
+msgid "Curacao"
+msgstr ""
+
+#: schema-creator.php:1829
+msgid "Cyprus"
+msgstr ""
+
+#: schema-creator.php:1830
+msgid "Czech Republic"
+msgstr ""
+
+#: schema-creator.php:1831
+msgid "Denmark"
+msgstr ""
+
+#: schema-creator.php:1832
+msgid "Djibouti"
+msgstr ""
+
+#: schema-creator.php:1833
+msgid "Dominica"
+msgstr ""
+
+#: schema-creator.php:1834
+msgid "Dominican Republic"
+msgstr ""
+
+#: schema-creator.php:1835
+msgid "Ecuador"
+msgstr ""
+
+#: schema-creator.php:1836
+msgid "Egypt"
+msgstr ""
+
+#: schema-creator.php:1837
+msgid "El Salvador"
+msgstr ""
+
+#: schema-creator.php:1838
+msgid "Equatorial Guinea"
+msgstr ""
+
+#: schema-creator.php:1839
+msgid "Eritrea"
+msgstr ""
+
+#: schema-creator.php:1840
+msgid "Estonia"
+msgstr ""
+
+#: schema-creator.php:1841
+msgid "Ethiopia"
+msgstr ""
+
+#: schema-creator.php:1842
+msgid "Falkland Islands (Malvinas)"
+msgstr ""
+
+#: schema-creator.php:1843
+msgid "Faroe Islands"
+msgstr ""
+
+#: schema-creator.php:1844
+msgid "Fiji"
+msgstr ""
+
+#: schema-creator.php:1845
+msgid "Finland"
+msgstr ""
+
+#: schema-creator.php:1846
+msgid "France"
+msgstr ""
+
+#: schema-creator.php:1847
+msgid "French Guiana"
+msgstr ""
+
+#: schema-creator.php:1848
+msgid "French Polynesia"
+msgstr ""
+
+#: schema-creator.php:1849
+msgid "French Southern Territories"
+msgstr ""
+
+#: schema-creator.php:1850
+msgid "Gabon"
+msgstr ""
+
+#: schema-creator.php:1851
+msgid "Gambia"
+msgstr ""
+
+#: schema-creator.php:1852
+msgid "Georgia"
+msgstr ""
+
+#: schema-creator.php:1853
+msgid "Germany"
+msgstr ""
+
+#: schema-creator.php:1854
+msgid "Ghana"
+msgstr ""
+
+#: schema-creator.php:1855
+msgid "Gibraltar"
+msgstr ""
+
+#: schema-creator.php:1856
+msgid "Greece"
+msgstr ""
+
+#: schema-creator.php:1857
+msgid "Greenland"
+msgstr ""
+
+#: schema-creator.php:1858
+msgid "Grenada"
+msgstr ""
+
+#: schema-creator.php:1859
+msgid "Guadeloupe"
+msgstr ""
+
+#: schema-creator.php:1860
+msgid "Guam"
+msgstr ""
+
+#: schema-creator.php:1861
+msgid "Guatemala"
+msgstr ""
+
+#: schema-creator.php:1862
+msgid "Guernsey"
+msgstr ""
+
+#: schema-creator.php:1863
+msgid "Guinea"
+msgstr ""
+
+#: schema-creator.php:1864
+msgid "Guinea-Bissau"
+msgstr ""
+
+#: schema-creator.php:1865
+msgid "Guyana"
+msgstr ""
+
+#: schema-creator.php:1866
+msgid "Haiti"
+msgstr ""
+
+#: schema-creator.php:1867
+msgid "Heard Island And Mcdonald Islands"
+msgstr ""
+
+#: schema-creator.php:1868
+msgid "Vatican City"
+msgstr ""
+
+#: schema-creator.php:1869
+msgid "Honduras"
+msgstr ""
+
+#: schema-creator.php:1870
+msgid "Hong Kong"
+msgstr ""
+
+#: schema-creator.php:1871
+msgid "Hungary"
+msgstr ""
+
+#: schema-creator.php:1872
+msgid "Iceland"
+msgstr ""
+
+#: schema-creator.php:1873
+msgid "India"
+msgstr ""
+
+#: schema-creator.php:1874
+msgid "Indonesia"
+msgstr ""
+
+#: schema-creator.php:1875
+msgid "Iran"
+msgstr ""
+
+#: schema-creator.php:1876
+msgid "Iraq"
+msgstr ""
+
+#: schema-creator.php:1877
+msgid "Ireland"
+msgstr ""
+
+#: schema-creator.php:1878
+msgid "Isle Of Man"
+msgstr ""
+
+#: schema-creator.php:1879
+msgid "Israel"
+msgstr ""
+
+#: schema-creator.php:1880
+msgid "Italy"
+msgstr ""
+
+#: schema-creator.php:1881
+msgid "Jamaica"
+msgstr ""
+
+#: schema-creator.php:1882
+msgid "Japan"
+msgstr ""
+
+#: schema-creator.php:1883
+msgid "Jersey"
+msgstr ""
+
+#: schema-creator.php:1884
+msgid "Jordan"
+msgstr ""
+
+#: schema-creator.php:1885
+msgid "Kazakhstan"
+msgstr ""
+
+#: schema-creator.php:1886
+msgid "Kenya"
+msgstr ""
+
+#: schema-creator.php:1887
+msgid "Kiribati"
+msgstr ""
+
+#: schema-creator.php:1888
+msgid "North Korea"
+msgstr ""
+
+#: schema-creator.php:1889
+msgid "South Korea"
+msgstr ""
+
+#: schema-creator.php:1890
+msgid "Kuwait"
+msgstr ""
+
+#: schema-creator.php:1891
+msgid "Kyrgyzstan"
+msgstr ""
+
+#: schema-creator.php:1892
+msgid "Laos"
+msgstr ""
+
+#: schema-creator.php:1893
+msgid "Latvia"
+msgstr ""
+
+#: schema-creator.php:1894
+msgid "Lebanon"
+msgstr ""
+
+#: schema-creator.php:1895
+msgid "Lesotho"
+msgstr ""
+
+#: schema-creator.php:1896
+msgid "Liberia"
+msgstr ""
+
+#: schema-creator.php:1897
+msgid "Libya"
+msgstr ""
+
+#: schema-creator.php:1898
+msgid "Liechtenstein"
+msgstr ""
+
+#: schema-creator.php:1899
+msgid "Lithuania"
+msgstr ""
+
+#: schema-creator.php:1900
+msgid "Luxembourg"
+msgstr ""
+
+#: schema-creator.php:1901
+msgid "Macao"
+msgstr ""
+
+#: schema-creator.php:1902
+msgid "Macedonia"
+msgstr ""
+
+#: schema-creator.php:1903
+msgid "Madagascar"
+msgstr ""
+
+#: schema-creator.php:1904
+msgid "Malawi"
+msgstr ""
+
+#: schema-creator.php:1905
+msgid "Malaysia"
+msgstr ""
+
+#: schema-creator.php:1906
+msgid "Maldives"
+msgstr ""
+
+#: schema-creator.php:1907
+msgid "Mali"
+msgstr ""
+
+#: schema-creator.php:1908
+msgid "Malta"
+msgstr ""
+
+#: schema-creator.php:1909
+msgid "Marshall Islands"
+msgstr ""
+
+#: schema-creator.php:1910
+msgid "Martinique"
+msgstr ""
+
+#: schema-creator.php:1911
+msgid "Mauritania"
+msgstr ""
+
+#: schema-creator.php:1912
+msgid "Mauritius"
+msgstr ""
+
+#: schema-creator.php:1913
+msgid "Mayotte"
+msgstr ""
+
+#: schema-creator.php:1914
+msgid "Micronesia"
+msgstr ""
+
+#: schema-creator.php:1915
+msgid "Moldova"
+msgstr ""
+
+#: schema-creator.php:1916
+msgid "Monaco"
+msgstr ""
+
+#: schema-creator.php:1917
+msgid "Mongolia"
+msgstr ""
+
+#: schema-creator.php:1918
+msgid "Montenegro"
+msgstr ""
+
+#: schema-creator.php:1919
+msgid "Montserrat"
+msgstr ""
+
+#: schema-creator.php:1920
+msgid "Morocco"
+msgstr ""
+
+#: schema-creator.php:1921
+msgid "Mozambique"
+msgstr ""
+
+#: schema-creator.php:1922
+msgid "Myanmar"
+msgstr ""
+
+#: schema-creator.php:1923
+msgid "Namibia"
+msgstr ""
+
+#: schema-creator.php:1924
+msgid "Nauru"
+msgstr ""
+
+#: schema-creator.php:1925
+msgid "Nepal"
+msgstr ""
+
+#: schema-creator.php:1926
+msgid "Netherlands"
+msgstr ""
+
+#: schema-creator.php:1927
+msgid "New Caledonia"
+msgstr ""
+
+#: schema-creator.php:1928
+msgid "New Zealand"
+msgstr ""
+
+#: schema-creator.php:1929
+msgid "Nicaragua"
+msgstr ""
+
+#: schema-creator.php:1930
+msgid "Niger"
+msgstr ""
+
+#: schema-creator.php:1931
+msgid "Nigeria"
+msgstr ""
+
+#: schema-creator.php:1932
+msgid "Niue"
+msgstr ""
+
+#: schema-creator.php:1933
+msgid "Norfolk Island"
+msgstr ""
+
+#: schema-creator.php:1934
+msgid "Northern Mariana Islands"
+msgstr ""
+
+#: schema-creator.php:1935
+msgid "Norway"
+msgstr ""
+
+#: schema-creator.php:1936
+msgid "Oman"
+msgstr ""
+
+#: schema-creator.php:1937
+msgid "Pakistan"
+msgstr ""
+
+#: schema-creator.php:1938
+msgid "Palau"
+msgstr ""
+
+#: schema-creator.php:1939
+msgid "Palestine"
+msgstr ""
+
+#: schema-creator.php:1940
+msgid "Panama"
+msgstr ""
+
+#: schema-creator.php:1941
+msgid "Papua New Guinea"
+msgstr ""
+
+#: schema-creator.php:1942
+msgid "Paraguay"
+msgstr ""
+
+#: schema-creator.php:1943
+msgid "Peru"
+msgstr ""
+
+#: schema-creator.php:1944
+msgid "Philippines"
+msgstr ""
+
+#: schema-creator.php:1945
+msgid "Pitcairn"
+msgstr ""
+
+#: schema-creator.php:1946
+msgid "Poland"
+msgstr ""
+
+#: schema-creator.php:1947
+msgid "Portugal"
+msgstr ""
+
+#: schema-creator.php:1948
+msgid "Puerto Rico"
+msgstr ""
+
+#: schema-creator.php:1949
+msgid "Qatar"
+msgstr ""
+
+#: schema-creator.php:1950
+msgid "Reunion"
+msgstr ""
+
+#: schema-creator.php:1951
+msgid "Romania"
+msgstr ""
+
+#: schema-creator.php:1952
+msgid "Russian Federation"
+msgstr ""
+
+#: schema-creator.php:1953
+msgid "Rwanda"
+msgstr ""
+
+#: schema-creator.php:1954
+msgid "St. Barthelemy"
+msgstr ""
+
+#: schema-creator.php:1955
+msgid "St. Helena"
+msgstr ""
+
+#: schema-creator.php:1956
+msgid "St. Kitts And Nevis"
+msgstr ""
+
+#: schema-creator.php:1957
+msgid "St. Lucia"
+msgstr ""
+
+#: schema-creator.php:1958
+msgid "St. Martin (French Part)"
+msgstr ""
+
+#: schema-creator.php:1959
+msgid "St. Pierre And Miquelon"
+msgstr ""
+
+#: schema-creator.php:1960
+msgid "St. Vincent And The Grenadines"
+msgstr ""
+
+#: schema-creator.php:1961
+msgid "Samoa"
+msgstr ""
+
+#: schema-creator.php:1962
+msgid "San Marino"
+msgstr ""
+
+#: schema-creator.php:1963
+msgid "Sao Tome And Principe"
+msgstr ""
+
+#: schema-creator.php:1964
+msgid "Saudi Arabia"
+msgstr ""
+
+#: schema-creator.php:1965
+msgid "Senegal"
+msgstr ""
+
+#: schema-creator.php:1966
+msgid "Serbia"
+msgstr ""
+
+#: schema-creator.php:1967
+msgid "Seychelles"
+msgstr ""
+
+#: schema-creator.php:1968
+msgid "Sierra Leone"
+msgstr ""
+
+#: schema-creator.php:1969
+msgid "Singapore"
+msgstr ""
+
+#: schema-creator.php:1970
+msgid "Sint Maarten (Dutch Part)"
+msgstr ""
+
+#: schema-creator.php:1971
+msgid "Slovakia"
+msgstr ""
+
+#: schema-creator.php:1972
+msgid "Slovenia"
+msgstr ""
+
+#: schema-creator.php:1973
+msgid "Solomon Islands"
+msgstr ""
+
+#: schema-creator.php:1974
+msgid "Somalia"
+msgstr ""
+
+#: schema-creator.php:1975
+msgid "South Africa"
+msgstr ""
+
+#: schema-creator.php:1976
+msgid "South Georgia"
+msgstr ""
+
+#: schema-creator.php:1977
+msgid "South Sudan"
+msgstr ""
+
+#: schema-creator.php:1978
+msgid "Spain"
+msgstr ""
+
+#: schema-creator.php:1979
+msgid "Sri Lanka"
+msgstr ""
+
+#: schema-creator.php:1980
+msgid "Sudan"
+msgstr ""
+
+#: schema-creator.php:1981
+msgid "Suriname"
+msgstr ""
+
+#: schema-creator.php:1982
+msgid "Svalbard"
+msgstr ""
+
+#: schema-creator.php:1983
+msgid "Swaziland"
+msgstr ""
+
+#: schema-creator.php:1984
+msgid "Sweden"
+msgstr ""
+
+#: schema-creator.php:1985
+msgid "Switzerland"
+msgstr ""
+
+#: schema-creator.php:1986
+msgid "Syria"
+msgstr ""
+
+#: schema-creator.php:1987
+msgid "Taiwan"
+msgstr ""
+
+#: schema-creator.php:1988
+msgid "Tajikistan"
+msgstr ""
+
+#: schema-creator.php:1989
+msgid "Tanzania"
+msgstr ""
+
+#: schema-creator.php:1990
+msgid "Thailand"
+msgstr ""
+
+#: schema-creator.php:1991
+msgid "Timor-Leste"
+msgstr ""
+
+#: schema-creator.php:1992
+msgid "Togo"
+msgstr ""
+
+#: schema-creator.php:1993
+msgid "Tokelau"
+msgstr ""
+
+#: schema-creator.php:1994
+msgid "Tonga"
+msgstr ""
+
+#: schema-creator.php:1995
+msgid "Trinidad And Tobago"
+msgstr ""
+
+#: schema-creator.php:1996
+msgid "Tunisia"
+msgstr ""
+
+#: schema-creator.php:1997
+msgid "Turkey"
+msgstr ""
+
+#: schema-creator.php:1998
+msgid "Turkmenistan"
+msgstr ""
+
+#: schema-creator.php:1999
+msgid "Turks And Caicos Islands"
+msgstr ""
+
+#: schema-creator.php:2000
+msgid "Tuvalu"
+msgstr ""
+
+#: schema-creator.php:2001
+msgid "Uganda"
+msgstr ""
+
+#: schema-creator.php:2002
+msgid "Ukraine"
+msgstr ""
+
+#: schema-creator.php:2003
+msgid "United Arab Emirates"
+msgstr ""
+
+#: schema-creator.php:2004
+msgid "United States Minor Outlying Islands"
+msgstr ""
+
+#: schema-creator.php:2005
+msgid "Uruguay"
+msgstr ""
+
+#: schema-creator.php:2006
+msgid "Uzbekistan"
+msgstr ""
+
+#: schema-creator.php:2007
+msgid "Vanuatu"
+msgstr ""
+
+#: schema-creator.php:2008
+msgid "Venezuela"
+msgstr ""
+
+#: schema-creator.php:2009
+msgid "Vietnam"
+msgstr ""
+
+#: schema-creator.php:2010
+msgid "British Virgin Islands "
+msgstr ""
+
+#: schema-creator.php:2011
+msgid "U.S. Virgin Islands "
+msgstr ""
+
+#: schema-creator.php:2012
+msgid "Wallis And Futuna"
+msgstr ""
+
+#: schema-creator.php:2013
+msgid "Western Sahara"
+msgstr ""
+
+#: schema-creator.php:2014
+msgid "Yemen"
+msgstr ""
+
+#: schema-creator.php:2015
+msgid "Zambia"
+msgstr ""
+
+#: schema-creator.php:2016
+msgid "Zimbabwe"
+msgstr ""
+
+#: schema-creator.php:2029
+msgid "Email Address"
+msgstr ""
+
+#: schema-creator.php:2034
+msgid "Telephone"
+msgstr ""
+
+#: schema-creator.php:2039
+msgid "Fax"
+msgstr ""
+
+#: schema-creator.php:2044
+msgid "Brand"
+msgstr ""
+
+#: schema-creator.php:2049
+msgid "Manufacturer"
+msgstr ""
+
+#: schema-creator.php:2054
+msgid "Model"
+msgstr ""
+
+#: schema-creator.php:2059
+msgid "Product ID"
+msgstr ""
+
+#: schema-creator.php:2064
+msgid "Aggregate Rating"
+msgstr ""
+
+#: schema-creator.php:2066
+msgid "Avg Rating"
+msgstr ""
+
+#: schema-creator.php:2075 schema-creator.php:2077
+msgid "Rating"
+msgstr ""
+
+#: schema-creator.php:2079 schema-creator.php:2081
+msgid "Minimum"
+msgstr ""
+
+#: schema-creator.php:2088
+msgid "Price"
+msgstr ""
+
+#: schema-creator.php:2093
+msgid "Condition"
+msgstr ""
+
+#: schema-creator.php:2095
+msgid "Select"
+msgstr ""
+
+#: schema-creator.php:2096
+msgid "New"
+msgstr ""
+
+#: schema-creator.php:2097
+msgid "Used"
+msgstr ""
+
+#: schema-creator.php:2098
+msgid "Refurbished"
+msgstr ""
+
+#: schema-creator.php:2099
+msgid "Damaged"
+msgstr ""
+
+#: schema-creator.php:2104
+msgid "Author"
+msgstr ""
+
+#: schema-creator.php:2109
+msgid "Publisher"
+msgstr ""
+
+#: schema-creator.php:2114
+msgid "Published Date"
+msgstr ""
+
+#: schema-creator.php:2120
+msgid "Edition"
+msgstr ""
+
+#: schema-creator.php:2125
+msgid "ISBN"
+msgstr ""
+
+#: schema-creator.php:2130
+msgid "Formats"
+msgstr ""
+
+#: schema-creator.php:2148
+msgid "Review Date"
+msgstr ""
+
+#: schema-creator.php:2154
+msgid "Prep Time"
+msgstr ""
+
+#: schema-creator.php:2156 schema-creator.php:2166
+msgid "Hours"
+msgstr ""
+
+#: schema-creator.php:2158 schema-creator.php:2168
+msgid "Minutes"
+msgstr ""
+
+#: schema-creator.php:2164
+msgid "Cook Time"
+msgstr ""
+
+#: schema-creator.php:2174
+msgid "Yield"
+msgstr ""
+
+#: schema-creator.php:2176
+msgid "serving size"
+msgstr ""
+
+#: schema-creator.php:2180
+msgid "Calories"
+msgstr ""
+
+#: schema-creator.php:2185
+msgid "Fat"
+msgstr ""
+
+#: schema-creator.php:2187 schema-creator.php:2193
+msgid "in grams"
+msgstr ""
+
+#: schema-creator.php:2191
+msgid "Sugar"
+msgstr ""
+
+#: schema-creator.php:2197
+msgid "Sodium"
+msgstr ""
+
+#: schema-creator.php:2199
+msgid "in milligrams"
+msgstr ""
+
+#: schema-creator.php:2203
+msgid "Ingredient"
+msgstr ""
+
+#: schema-creator.php:2205
+msgid "include both type and amount"
+msgstr ""
+
+#: schema-creator.php:2208
+msgid "Add Another Ingredient"
+msgstr ""
+
+#: schema-creator.php:2211
+msgid "Instructions"
+msgstr ""
+
+#: schema-creator.php:2217
+msgid "Insert"
+msgstr ""
+
+#: schema-creator.php:2218
+msgid "Cancel"
+msgstr ""
+
+#: schema-creator.php:2223
+msgid "Select a schema type above to get started"
+msgstr ""
+
+#: schema-creator.php:2224
+msgid "This schema type is currently being constructed."
+msgstr ""
