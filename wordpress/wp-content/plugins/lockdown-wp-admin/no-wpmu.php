@@ -1,4 +1,4 @@
-<?php if (! defined('ABSPATH')) exit;
+<?php
 /**
  * We don't want to allow for this plugin to be used in WP-MS or network wide.
  *
@@ -7,12 +7,11 @@
 class Disable_WPMS_Plugin_LD
 {
 	/**
-	 * PHP 4 style constructor
+	 * Object Constructor
 	 *
-	 * @access private
 	 * @return void
 	**/
-	function Disable_WPMS_Plugin_LD()
+	function __construct()
 	{
 		register_activation_hook(LD_FILE_NAME, array( &$this, 'on_activate') );
 	}
@@ -24,14 +23,11 @@ class Disable_WPMS_Plugin_LD
 	**/
 	function on_activate()
 	{
-		/**
-         * Disable buggy sitewide activation in WPMU and WP 3.0
-         */
-        if ((is_multisite() && isset($_GET['sitewide'])) || ($this->is_network_mode() && isset($_GET['networkwide']))) {
-            $this->network_activate_error();
-        }
+		// Disable buggy sitewide activation in WPMU and WP 3.0
+		if ((is_multisite() && isset($_GET['sitewide'])) || ($this->is_network_mode() && isset($_GET['networkwide'])))
+			$this->network_activate_error();
 		
-		//	Default options
+		// Default options
 		update_option('ld_http_auth', 'none');
 		update_option('ld_hide_wp_admin', 'no');
 	}
@@ -41,9 +37,9 @@ class Disable_WPMS_Plugin_LD
 	 *
 	 * @access private
 	**/
-	function network_activate_error()
+	public function network_activate_error()
 	{
-		//	De-activate the plugin
+		// De-activate the plugin
 		$active_plugins = (array) get_option('active_plugins');
 		$active_plugins_network = (array) get_site_option('active_sitewide_plugins');
 		
@@ -66,23 +62,7 @@ class Disable_WPMS_Plugin_LD
 		update_option('active_plugins', $active_plugins);
 		update_site_option('active_sitewide_plugins', $active_plugins_network);
 		
-		?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
-	<head>
-		<title>Network Activation Error</title>
-		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-	</head>
-	<body>
-		<p>
-		    <strong>Error:</strong> This plugin cannot be activated network-wide.
-		</p>
-		<p>
-			<a href="javascript:history.back(-1);">Back</a>			
-		</p>
-	</body>
-</html>
-<?php
-		exit();
+		wp_die('The plugin cannot be activate network-wide.');
 	}
 	
 	/**
@@ -103,7 +83,7 @@ class Disable_WPMS_Plugin_LD
 	}
 }
 
-//	The object.
-$setup_no_wpmu = new Disable_WPMS_Plugin_LD();
+// The object.
+new Disable_WPMS_Plugin_LD;
 
 /* End of file: no-wpmu.php */

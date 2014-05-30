@@ -21,9 +21,6 @@ msgstr "Virusverdacht"
 msgid "AntiVirus for WordPress"
 msgstr "AntiVirus für WordPress"
 
-msgid "Next check"
-msgstr "Erneuter Check"
-
 msgid "View line"
 msgstr "Zeige Zeile"
 
@@ -33,25 +30,28 @@ msgstr "Als 'Kein Virus' markieren"
 msgid "Scan finished"
 msgstr "Prüfung abgeschlossen"
 
-msgid "Enable the daily antivirus scan"
-msgstr "Tägliche AntiVirus-Prüfung durchführen"
+msgid "Daily malware scan"
+msgstr "Tägliche Prüfung"
 
-msgid "Alternate e-mail address for notifications"
-msgstr "Alternative E-Mail-Adresse für Benachrichtigungen"
+msgid "Check the theme templates for malware"
+msgstr "Überprüfung der Theme-Templates auf Malware"
+
+msgid "Next Run"
+msgstr "Nächste Ausführung"
+
+msgid "Malware detection by Google Safe Browsing"
+msgstr "Malware-Erkennung durch Google Safe Browsing"
+
+msgid "Diagnosis and notification in suspicion case"
+msgstr "Diagnose und Benachrichtigung im Verdachtsfall"
+
+msgid "Email address for notifications"
+msgstr "E-Mail-Adresse für Benachrichtigungen"
 
 msgid "If the field is empty, the blog admin will be notified"
-msgstr "Bleibt das Eingabefeld leer, wird der Blog-Admin benachrichtigt"
+msgstr "Bleibt das Eingabefeld leer, wird der Admin benachrichtigt"
 
-msgid "Malware and phishing detection by Google"
-msgstr "Malware-Erkennung von Google berücksichtigen"
-
-msgid "Use %s for malware monitoring"
-msgstr "Benachrichtigung bei Verdacht seitens %s"
-
-msgid "Scan via cronjob"
-msgstr "Automatische Prüfung"
-
-msgid "Manual scan"
+msgid "Manual malware scan"
 msgstr "Manuelle Prüfung"
 
 msgid "Scan the theme templates now"

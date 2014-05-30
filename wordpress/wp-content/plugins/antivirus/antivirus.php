@@ -7,7 +7,7 @@ Description: Security solution as a smart, effectively plugin to protect your bl
 Author: Sergej M&uuml;ller
 Author URI: http://wpcoder.de
 Plugin URI: http://wpantivirus.com
-Version: 1.3.4
+Version: 1.3.5
 */
 
 
@@ -47,7 +47,7 @@ class AntiVirus {
 	* Konstruktor der Klasse
 	*
 	* @since   0.1
-	* @change  1.3.4
+	* @change  1.3.5
 	*/
 
 	public function __construct()
@@ -100,14 +100,6 @@ class AntiVirus {
 					)
 				);
 				add_action(
-					'admin_bar_menu',
-					array(
-						__CLASS__,
-						'add_adminbar_menu'
-					),
-					91
-				);
-				add_action(
 					'admin_notices',
 					array(
 						__CLASS__,
@@ -115,49 +107,28 @@ class AntiVirus {
 					)
 				);
 				add_action(
-					'admin_print_styles',
+					'deactivate_' .self::$base,
 					array(
 						__CLASS__,
-						'add_enqueue_style'
+						'clear_scheduled_hook'
 					)
 				);
-
-				/* GUI */
-				if ( self::_is_current_page('home') ) {
-					add_action(
-						'admin_print_scripts',
-						array(
-							__CLASS__,
-							'add_enqueue_script'
-						)
-					);
-
-				/* Plugins */
-				} else if ( self::_is_current_page('plugins') ) {
-					add_action(
-						'deactivate_' .self::$base,
-						array(
-							__CLASS__,
-							'clear_scheduled_hook'
-						)
-					);
-					add_filter(
-						'plugin_row_meta',
-						array(
-							__CLASS__,
-							'init_row_meta'
-						),
-						10,
-						2
-					);
-					add_filter(
-						'plugin_action_links_' .self::$base,
-						array(
-							__CLASS__,
-							'init_action_links'
-						)
-					);
-				}
+				add_filter(
+					'plugin_row_meta',
+					array(
+						__CLASS__,
+						'init_row_meta'
+					),
+					10,
+					2
+				);
+				add_filter(
+					'plugin_action_links_' .self::$base,
+					array(
+						__CLASS__,
+						'init_action_links'
+					)
+				);
 			}
 		}
 	}
@@ -283,15 +254,11 @@ class AntiVirus {
 	* Uninstallation des Plugins pro MU-Blog
 	*
 	* @since   1.1
-	* @change  1.3.4
+	* @change  1.3.5
 	*/
 
 	public static function uninstall()
 	{
-		/* Global */
-		global $wpdb;
-
-		/* Remove settings */
 		delete_option('antivirus');
 	}
 
@@ -441,7 +408,7 @@ class AntiVirus {
 		$response = wp_remote_get(
 			sprintf(
 				'https://sb-ssl.google.com/safebrowsing/api/lookup?client=wpantivirus&apikey=%s&appver=0.1&pver=3.0&url=%s',
-				'ABQIAAAAsu9cf81zMEioUOLBi7TrhhTJnIkNNG4BG3awC5RGoTZgJ-xX-A', /* API Key reserved only for AntiVirus */
+				'ABQIAAAAsu9cf81zMEioUOLBi7TrhhTJnIkNNG4BG3awC5RGoTZgJ-xX-A', /* API Key reserved for AntiVirus */
 				urlencode( get_bloginfo('url') )
 			),
 			array(
@@ -545,13 +512,13 @@ class AntiVirus {
 	* Initialisierung der GUI
 	*
 	* @since   0.1
-	* @change  1.3.1
+	* @change  1.3.5
 	*/
 
 	public static function add_sidebar_menu()
 	{
 		/* Menü anlegen */
-		add_options_page(
+		$page = add_options_page(
 			'AntiVirus',
 			'AntiVirus',
 			'manage_options',
@@ -561,6 +528,21 @@ class AntiVirus {
 				'show_admin_menu'
 			)
 		);
+
+		add_action(
+			'admin_print_styles-' . $page,
+			array(
+				__CLASS__,
+				'add_enqueue_style'
+			)
+		);
+		add_action(
+			'admin_print_scripts-' . $page,
+			array(
+				__CLASS__,
+				'add_enqueue_script'
+			)
+		);
 	}
 
 
@@ -568,7 +550,7 @@ class AntiVirus {
 	* Initialisierung von JavaScript
 	*
 	* @since   0.8
-	* @change  1.3.4
+	* @change  1.3.5
 	*/
 
 	public static function add_enqueue_script()
@@ -593,7 +575,6 @@ class AntiVirus {
 			'av_settings',
 			array(
 				'nonce' => wp_create_nonce('av_ajax_nonce'),
-				'ajax' 	=> admin_url('admin-ajax.php'),
 				'theme'	=> urlencode(self::_get_theme_name()),
 				'msg_1'	=> esc_html__('There is no virus', 'antivirus'),
 				'msg_2' => esc_html__('View line', 'antivirus'),
@@ -1126,36 +1107,10 @@ class AntiVirus {
 
 
 	/**
-	* Prüfung der Admin-Seite
-	*
-	* @since   0.1
-	* @change  0.8
-	*
-	* @param   integer  $page  Gesuchte Seite
-	* @return  boolean         TRUE, wenn die aktuelle auch die gesuchte Seite ist
-	*/
-
-	private static function _is_current_page($page)
-	{
-		switch($page) {
-			case 'home':
-				return ( !empty($_REQUEST['page']) && $_REQUEST['page'] == 'antivirus' );
-
-			case 'index':
-			case 'plugins':
-				return ( !empty($GLOBALS['pagenow']) && $GLOBALS['pagenow'] == sprintf('%s.php', $page) );
-
-			default:
-				return false;
-		}
-	}
-
-
-	/**
 	* Anzeige des Dashboard-Hinweises
 	*
 	* @since   0.1
-	* @change  1.3.4
+	* @change  1.3.5
 	*/
 
 	public static function show_dashboard_notice() {
@@ -1164,14 +1119,9 @@ class AntiVirus {
 			return;
 		}
 
-		/* Bereits in der Adminbar */
-		if ( function_exists('is_admin_bar_showing') && is_admin_bar_showing() ) {
-			return;
-		}
-
 		/* Warnung */
 		echo sprintf(
-			'<div class="updated fade"><p><strong>%1$s:</strong> %2$s <a href="%3$s">%4$s &rarr;</a></p></div>',
+			'<div class="error"><p><strong>%1$s:</strong> %2$s <a href="%3$s">%4$s &rarr;</a></p></div>',
 			esc_html__('Virus suspected', 'antivirus'),
 			esc_html__('The daily antivirus scan of your blog suggests alarm.', 'antivirus'),
 			add_query_arg(
@@ -1180,43 +1130,7 @@ class AntiVirus {
 				),
 				admin_url('options-general.php')
 			),
-			esc_html__('Manual scan', 'antivirus')
-		);
-	}
-
-
-	/**
-	* Anzeige des Menüs in der Adminbar
-	*
-	* @since   1.2
-	* @change  1.3.4
-	*
-	* @param   object  $wp_admin_bar  Adminbar-Object
-	*/
-
-	public static function add_adminbar_menu($wp_admin_bar) {
-		/* Kein Alert? */
-		if ( ! self::_get_option('cronjob_alert') ) {
-			return;
-		}
-
-		/* Keine Adminbar? */
-		if ( ! function_exists('is_admin_bar_showing') OR ! is_admin_bar_showing() ) {
-			return;
-		}
-
-		/* Hinzufügen */
-		$wp_admin_bar->add_menu(
-			array(
-				'id' 	=> 'antivirus',
-				'title' => '<span class="ab-icon"></span><span class="ab-label">' .esc_html__('Virus suspected', 'antivirus'). '</span>',
-				'href'  => add_query_arg(
-					array(
-						'page' => 'antivirus'
-					),
-					admin_url('options-general.php')
-				)
-			)
+			esc_html__('Manual malware scan', 'antivirus')
 		);
 	}
 
@@ -1225,7 +1139,7 @@ class AntiVirus {
 	* Anzeige der GUI
 	*
 	* @since   0.1
-	* @change  1.3.4
+	* @change  1.3.5
 	*/
 
 	public static function show_admin_menu() {
@@ -1267,110 +1181,92 @@ class AntiVirus {
 		<?php } ?>
 
 		<div class="wrap" id="av_main">
-			<div class="icon32"></div>
-
 			<h2>
 				AntiVirus
 			</h2>
 
-			<form method="post" action="">
-				<?php wp_nonce_field('antivirus') ?>
-
-				<div id="poststuff">
-					<div class="postbox">
-						<h3>
-							<?php esc_html_e('Scan via cronjob', 'antivirus') ?>
-						</h3>
-
-						<div class="inside">
-							<table class="form-table">
-								<tr>
-									<td>
-										<input type="checkbox" name="av_cronjob_enable" id="av_cronjob_enable" value="1" <?php checked(self::_get_option('cronjob_enable'), 1) ?> />
-									</td>
-									<td>
-										<label for="av_cronjob_enable">
-											<?php esc_html_e('Enable the daily antivirus scan', 'antivirus') ?>
-											<small>
-												<?php if ( $timestamp = wp_next_scheduled('antivirus_daily_cronjob') ) {
-													echo sprintf(
-														'%s: %s',
-														esc_html__('Next check', 'antivirus'),
-														date_i18n('d.m.Y H:i:s', $timestamp + get_option('gmt_offset') * 3600)
-													);
-												} ?>
-											</small>
-										</label>
-									</td>
-								</tr>
-
-								<tr>
-									<td></td>
-									<td>
-										<label for="av_notify_email">
-											<?php esc_html_e('Alternate e-mail address for notifications', 'antivirus') ?>
-										</label>
-										<small>
-											<?php esc_html_e('If the field is empty, the blog admin will be notified', 'antivirus') ?>
-										</small>
-										<input type="text" name="av_notify_email" id="av_notify_email" value="<?php esc_attr_e(self::_get_option('notify_email')) ?>" class="regular-text" />
-									</td>
-								</tr>
-
-								<tr>
-									<td></td>
-									<td>
-										<table>
-											<tr>
-												<td>
-													<input type="checkbox" name="av_safe_browsing" id="av_safe_browsing" value="1" <?php checked(self::_get_option('safe_browsing'), 1) ?> />
-												</td>
-												<td>
-													<label for="av_safe_browsing">
-														<?php esc_html_e('Malware and phishing detection by Google', 'antivirus') ?>
-													</label>
-													<small>
-														<?php echo sprintf(
-															esc_html__('Use %s for malware monitoring', 'antivirus'),
-															'<a href="http://en.wikipedia.org/wiki/Google_Safe_Browsing" target="_blank">Google Safe Browsing</a>'
-														) ?>
-													</small>
-												</td>
-											</tr>
-										</table>
-									</td>
-								</tr>
-							</table>
-
-							<div class="ab-column ab-submit">
-								<p>
-									<?php if ( get_locale() == 'de_DE' ) { ?>
-										<a href="http://playground.ebiene.de/antivirus-wordpress-plugin/" target="_blank">Handbuch</a>
-									<?php } ?>
-									<a href="https://flattr.com/t/1322865" target="_blank">Flattr</a>
-									<a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&amp;hosted_button_id=5RDDW9FEHGLG6" target="_blank">PayPal</a>
-								</p>
-
-								<input type="submit" class="button-primary" value="<?php _e('Save Changes') ?>" />
-							</div>
-						</div>
-					</div>
-
-
-					<div class="postbox">
-						<h3>
-							<?php esc_html_e('Manual scan', 'antivirus') ?>
-						</h3>
-
-						<div class="inside" id="av_manual">
+			<table class="form-table">
+				<tr valign="top">
+					<th scope="row">
+						<?php esc_html_e('Manual malware scan', 'antivirus') ?>
+					</th>
+					<td>
+						<div class="inside" id="av_manual_scan">
 							<p>
-								<a href="#" class="button rbutton"><?php esc_html_e('Scan the theme templates now', 'antivirus') ?></a>
+								<a href="#" class="button button-primary">
+									<?php esc_html_e('Scan the theme templates now', 'antivirus') ?>
+								</a>
 								<span class="alert"></span>
 							</p>
 							<div class="output"></div>
 						</div>
-					</div>
-				</div>
+					</td>
+				</tr>
+			</table>
+
+
+			<form method="post" action="">
+				<?php wp_nonce_field('antivirus') ?>
+
+				<table class="form-table">
+					<tr valign="top">
+						<th scope="row">
+							<?php esc_html_e('Daily malware scan', 'antivirus') ?>
+						</th>
+						<td>
+							<fieldset>
+								<label for="av_cronjob_enable">
+									<input type="checkbox" name="av_cronjob_enable" id="av_cronjob_enable" value="1" <?php checked(self::_get_option('cronjob_enable'), 1) ?> />
+									<?php esc_html_e('Check the theme templates for malware', 'antivirus') ?>
+								</label>
+
+								<p class="description">
+									<?php if ( $timestamp = wp_next_scheduled('antivirus_daily_cronjob') ) {
+										echo sprintf(
+											'%s: %s',
+											esc_html__('Next Run', 'antivirus'),
+											date_i18n('d.m.Y H:i:s', $timestamp + get_option('gmt_offset') * 3600)
+										);
+									} ?>
+								</p>
+
+
+								<br />
+
+
+								<label for="av_safe_browsing">
+									<input type="checkbox" name="av_safe_browsing" id="av_safe_browsing" value="1" <?php checked(self::_get_option('safe_browsing'), 1) ?> />
+									<?php esc_html_e('Malware detection by Google Safe Browsing', 'antivirus') ?>
+								</label>
+
+								<p class="description">
+									<?php esc_html_e('Diagnosis and notification in suspicion case', 'antivirus') ?>
+								</p>
+
+
+								<br />
+
+
+								<label for="av_notify_email">
+									<input type="text" name="av_notify_email" id="av_notify_email" value="<?php esc_attr_e(self::_get_option('notify_email')) ?>" class="regular-text" placeholder="<?php esc_attr_e('Email address for notifications', 'antivirus') ?>" />
+								</label>
+
+								<p class="description">
+									<?php esc_html_e('If the field is empty, the blog admin will be notified', 'antivirus') ?>
+								</p>
+							</fieldset>
+						</td>
+					</tr>
+
+					<tr valign="top">
+						<th scope="row">
+							<input type="submit" class="button button-primary" value="<?php _e('Save Changes') ?>" />
+						</th>
+						<td>
+							<?php if ( get_locale() == 'de_DE' ) { ?><a href="http://playground.ebiene.de/antivirus-wordpress-plugin/" target="_blank">Handbuch</a> &bull; <?php } ?><a href="https://flattr.com/t/1322865" target="_blank">Flattr</a> &bull; <a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&amp;hosted_button_id=5RDDW9FEHGLG6" target="_blank">PayPal</a>
+						</td>
+					</tr>
+				</table>
 			</form>
 		</div>
 	<?php }

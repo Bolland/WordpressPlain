@@ -1,6 +1,9 @@
 Lockdown WP Admin
 =============
 
+[![Build Status](https://api.travis-ci.org/srtfisher/Lockdown-WPAdmin.png?branch=master)](https://travis-ci.org/srtfisher/Lockdown-WPAdmin)
+
+
 Lockdown WP Admin conceals the administration and login screen from intruders. It can hide WordPress Admin (/wp-admin/) and and login (/wp-login.php) as well as add HTTP authentication to the login system. We can also change the login URL from wp-login.php to whatever you'd like: /login, /log-in-here, etc.
 
 ### Description
@@ -17,6 +20,8 @@ If you enable HTTP authentication, it will add HTTP authentication to the PHP fi
 1. Upload `/lockdown-wp-admin/` to the `/wp-content/plugins/` directory
 2. Activate the plugin through the 'Plugins' menu in WordPress
 3. Navigate to the "Lockdown WP" menu
+
+*Composer is not required to be setup for installation of this plugin! It is simply used for development purposes to provide unit testing.*
 
 ### FAQ
 **How can we add files to the white list to hide from the public eye? We want to have AJAX and use a custom file, but we can't because it hides it from the public.**
@@ -87,5 +92,18 @@ A very late update, sorry! Worked to fix many issues with the admin bar and the 
 * Cleanup, cleanup!
 
 2.0.1
+* Bug fix by [Michal Krause](https://github.com/michal-krause)
 
-Tiny bug fix.
+2.0.2
+* Query string detection bug fix by [James Bonham](http://wordpress.org/support/profile/jamesbonham)
+* Issues with WordPress in a sub-directory
+
+2.1
+* Unit Testing! Unit Testing ensure more reliable code going forward
+* Support for WordPress 3.6
+* General Cleaning
+
+2.2
+* Fixing issues with other plugins
+* Support tested for 3.9
+* Large code structure changes. If you are extending the `WP_LockAuth` at all, you should basically check the class anew since it was seperated into Admin and Application services.

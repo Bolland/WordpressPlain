@@ -2,8 +2,8 @@
 Contributors: sergej.mueller
 Tags: antivirus, malware, scanner, phishing, safe browsing
 Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=5RDDW9FEHGLG6
-Requires at least: 2.8
-Tested up to: 3.6
+Requires at least: 3.8
+Tested up to: 3.9
 Stable tag: trunk
 
 
@@ -32,7 +32,7 @@ Useful plugin that will scan your theme templates for malicious injections. Auto
 
 = Requirements =
 * PHP 5.1
-* WordPress 2.8
+* WordPress 3.8
 
 
 = Donation =
@@ -57,6 +57,10 @@ Useful plugin that will scan your theme templates for malicious injections. Auto
 
 
 == Changelog ==
+
+= 1.3.5 =
+* Deutsch: Optimierungen für WordPress 3.8
+* English: Optimizations for WordPress 3.8
 
 = 1.3.4 =
 * Deutsch: Benachrichtigung per E-Mail, sobald [Google Safe Browsing](http://en.wikipedia.org/wiki/Google_Safe_Browsing) Malware im Blog erkennt. [Mehr auf Google+](https://plus.google.com/110569673423509816572/posts/H72FFwvna1i)

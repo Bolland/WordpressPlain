@@ -2,7 +2,6 @@ jQuery(document).ready(
 	function($) {
 		/* Init */
 		av_nonce = av_settings.nonce;
-		av_ajax = av_settings.ajax;
 		av_theme = av_settings.theme;
 		av_msg_1 = av_settings.msg_1;
 		av_msg_2 = av_settings.msg_2;
@@ -18,19 +17,19 @@ jQuery(document).ready(
 
 			/* Request starten */
 			$.post(
-				av_ajax,
-			 	{
+				ajaxurl,
+				{
 					'action':			'get_ajax_response',
-				 	'_ajax_nonce':		av_nonce,
-				 	'_theme_file':		file,
-				 	'_action_request':	'check_theme_file'
-			 	},
-			 	function(input) {
+					'_ajax_nonce':		av_nonce,
+					'_theme_file':		file,
+					'_action_request':	'check_theme_file'
+				},
+				function(input) {
 					/* Wert initialisieren */
-			 		var item = $('#av_template_' + id);
+					var item = $('#av_template_' + id);
 
-				 	/* Daten vorhanden? */
-				 	if ( input ) {
+					/* Daten vorhanden? */
+					if ( input ) {
 						/* Input konvertieren */
 						input = eval('(' + input + ')');
 
@@ -42,12 +41,12 @@ jQuery(document).ready(
 						/* Farblich anpassen */
 						item.addClass('danger');
 
-				 		/* Init */
-					 	var i,
-					 		lines = input.data,
-					 		len = lines.length;
+						/* Init */
+						var i,
+							lines = input.data,
+							len = lines.length;
 
-					 	/* Zeilen loopen */
+						/* Zeilen loopen */
 						for (i = 0; i < len; i = i + 3) {
 							var num = parseInt(lines[i]) + 1,
 								md5 = lines[i + 2],
@@ -59,15 +58,15 @@ jQuery(document).ready(
 							$('#' + md5).click(
 								function() {
 									$.post(
-										av_ajax,
+										ajaxurl,
 										{
 											'action': 			'get_ajax_response',
-										 	'_ajax_nonce': 		av_nonce,
-										 	'_file_md5': 		$(this).attr('id'),
-										 	'_action_request':	'update_white_list'
-									 	},
-									 	function(input) {
-									 		/* Keine Daten? */
+											'_ajax_nonce': 		av_nonce,
+											'_file_md5': 		$(this).attr('id'),
+											'_action_request':	'update_white_list'
+										},
+										function(input) {
+											/* Keine Daten? */
 											if (!input) {
 												return;
 											}
@@ -80,13 +79,13 @@ jQuery(document).ready(
 												return;
 											}
 
-								 			var parent = $('#' + input.data[0]).parent();
+											var parent = $('#' + input.data[0]).parent();
 
 											if (parent.parent().children().length <= 1) {
 												parent.parent().hide('slow').remove();
 											}
 											parent.hide('slow').remove();
-									 	}
+										}
 									);
 
 									return false;
@@ -94,40 +93,40 @@ jQuery(document).ready(
 							);
 						}
 					} else {
-			 			item.addClass('done');
-				 	}
+						item.addClass('done');
+					}
 
 					/* Counter erhöhen */
 					av_files_loaded ++;
 
-			 	 	/* Hinweis ausgeben */
-				 	if ( av_files_loaded >= av_files_total ) {
-						$('#av_manual .alert').text(av_msg_3).fadeIn().fadeOut().fadeIn().fadeOut().fadeIn().animate({opacity: 1.0}, 500).fadeOut(
+					/* Hinweis ausgeben */
+					if ( av_files_loaded >= av_files_total ) {
+						$('#av_manual_scan .alert').text(av_msg_3).fadeIn().fadeOut().fadeIn().fadeOut().fadeIn().animate({opacity: 1.0}, 500).fadeOut(
 							'slow',
 							function() {
 								$(this).empty();
 							}
 						);
-				 	} else {
-				 		check_theme_file(id + 1);
-				 	}
-			 	}
+					} else {
+						check_theme_file(id + 1);
+					}
+				}
 			);
 		}
 
 		/* Tempates Check */
-		$('#av_manual a.button').click(
+		$('#av_manual_scan a.button').click(
 			function() {
 				/* Request */
-		 		$.post(
-		 			av_ajax,
-		 			{
-					 	action: 		'get_ajax_response',
-					 	_ajax_nonce: 	 av_nonce,
-					 	_action_request: 'get_theme_files'
-		 			},
-		 			function(input) {
-		 				/* Keine Daten? */
+				$.post(
+					ajaxurl,
+					{
+						action: 		'get_ajax_response',
+						_ajax_nonce: 	 av_nonce,
+						_action_request: 'get_theme_files'
+					},
+					function(input) {
+						/* Keine Daten? */
 						if ( !input ) {
 							return;
 						}
@@ -157,30 +156,28 @@ jQuery(document).ready(
 						);
 
 						/* Werte zuweisen */
-						$('#av_manual .alert').empty();
-						$('#av_manual .output').empty().append(output);
+						$('#av_manual_scan .alert').empty();
+						$('#av_manual_scan .output').empty().append(output);
 
 						/* Files loopen */
 						check_theme_file();
 					}
 				);
 
-		 		return false;
+				return false;
 			}
 		);
 
 		/* Checkboxen markieren */
 		function manage_options() {
 			var $$ = $('#av_cronjob_enable'),
-				input = $$.parents('.form-table').find('input').not($$);
+				input = $$.parents('fieldset').find(':text, :checkbox').not($$);
 
 			if ( typeof $.fn.prop === 'function' ) {
 				input.prop('disabled', !$$.prop('checked'));
 			} else {
 				input.attr('disabled', !$$.attr('checked'));
 			}
-
-
 		}
 
 		/* Checkbox überwachen */
