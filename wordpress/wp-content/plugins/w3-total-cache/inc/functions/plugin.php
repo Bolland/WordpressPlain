@@ -7,7 +7,7 @@
 /**
  * Add W3TC action callback
  *
- * @param string $action
+ * @param string $key
  * @param mixed $callback
  * @return void
  */
@@ -26,11 +26,13 @@ function w3tc_do_ob_callbacks($order, &$value) {
     }
     return $value;
 }
+
 /**
  * Add W3TC action callback
  *
  * @param string $action
  * @param mixed $callback
+ * @param int $priority
  * @return void
  */
 function w3tc_add_action($action, $callback, $priority = 10) {
@@ -86,8 +88,11 @@ function w3tc_do_action_by_ref($action, &$value = null) {
  * @return boolean
  */
 function w3tc_pgcache_flush() {
-    $w3_pgcache = w3_instance('W3_PgCacheFlush');
-    return $w3_pgcache->flush();
+    /**
+     * @var $w3_cacheflush W3_CacheFlush
+     */
+    $w3_cacheflush = w3_instance('W3_CacheFlush');
+    return $w3_cacheflush->pgcache_flush();
 }
 
 /**
@@ -114,35 +119,55 @@ function w3tc_pgcache_flush_url($url) {
     return $w3_cacheflush->pgcache_flush_url($url);
 }
 
+
+/**
+ * Shortcut for refreshing the media query string.
+ */
+function w3tc_browsercache_flush() {
+    $config = w3_instance('W3_Config');
+    if ($config->get_boolean('browsercache.enabled')) {
+        $config->set('browsercache.timestamp', time());
+        try {
+            $config->save();
+        } catch (Exception $ex) {}
+    }
+
+}
 /**
  * Shortcut for database cache flush
  *
- * @return boolean
  */
 function w3tc_dbcache_flush() {
-    $w3_db = w3_instance('W3_DbCache');
-    return $w3_db->flush_cache();
+    /**
+     * @var $w3_cacheflush W3_CacheFlush
+     */
+    $w3_cacheflush = w3_instance('W3_CacheFlush');
+    $w3_cacheflush->dbcache_flush();
 }
 
 /**
  * Shortcut for minify cache flush
  *
- * @return boolean
  */
 function w3tc_minify_flush() {
-    $w3_minify = w3_instance('W3_Minify');
+    /**
+     * @var $w3_cacheflush W3_CacheFlush
+     */
+    $w3_cacheflush = w3_instance('W3_CacheFlush');
+    $w3_cacheflush->minifycache_flush();
 
-    return $w3_minify->flush();
 }
 
 /**
  * Shortcut for objectcache cache flush
  *
- * @return boolean
  */
 function w3tc_objectcache_flush() {
-    $w3_objectcache = w3_instance('W3_ObjectCache');
-    return $w3_objectcache->flush();
+    /**
+     * @var $w3_cacheflush W3_CacheFlush
+     */
+    $w3_cacheflush = w3_instance('W3_CacheFlush');
+    $w3_cacheflush->objectcache_flush();
 }
 
 /**
@@ -257,22 +282,188 @@ function w3tc_fragmentcache_flush() {
  * Register a fragment group and connected actions for current blog
  * @param string $group
  * @param array $actions on which actions group should be flushed
+ * @param integer $expiration in seconds
  * @return mixed
  */
-function w3tc_register_fragment_group($group, $actions) {
+function w3tc_register_fragment_group($group, $actions, $expiration) {
+    if (!is_int($expiration)) {
+        $expiration = (int) $expiration;
+        trigger_error(__FUNCTION__ . ' needs expiration parameter to be an int.', E_USER_WARNING);
+    }
     $w3_fragmentcache = w3_instance('W3_Pro_Plugin_FragmentCache');
-    return $w3_fragmentcache->register_group($group, $actions);
+    return $w3_fragmentcache->register_group($group, $actions, $expiration);
 }
 
 /**
  * Register a fragment group for whole network in MS install
  * @param $group
  * @param $actions
+ * @param integer $expiration in seconds
  * @return mixed
  */
-function w3tc_register_fragment_global_group($group, $actions) {
+function w3tc_register_fragment_global_group($group, $actions, $expiration) {
+    if (!is_int($expiration)) {
+        $expiration = (int) $expiration;
+        trigger_error(__FUNCTION__ . ' needs expiration parameter to be an int.', E_USER_WARNING);
+    }
     $w3_fragmentcache = w3_instance('W3_Pro_Plugin_FragmentCache');
-    return $w3_fragmentcache->register_global_group($group, $actions);
+    return $w3_fragmentcache->register_global_group($group, $actions, 
+        $expiration);
+}
+
+/**
+ * Starts caching output
+ *
+ * @param string $id the fragment id
+ * @param string $group the fragment group name.
+ * @param string $hook name of the action/filter hook to disable on fragment found
+ * @return bool returns true if cached fragment is echoed
+ */
+function w3tc_fragmentcache_start($id, $group = '', $hook = '') {
+    $fragment = w3tc_fragmentcache_get($id, $group);
+    if (false === $fragment) {
+        _w3tc_caching_fragment($id, $group);
+        ob_start();
+    } else {
+        echo $fragment;
+        if ($hook) {
+            global $wp_filter;
+            $wp_filter[$hook] = array();
+        }
+        return true;
+    }
+    return false;
+}
+
+/**
+ * Starts caching filter, returns if filter already cached.
+ *
+ * @param string $id the fragment id
+ * @param string $group the fragment group name.
+ * @param string $hook name of the action/filter hook to disable on fragment found
+ * @param mixed $data the data returned by the filter
+ * @return mixed
+ */
+function w3tc_fragmentcache_filter_start($id, $group = '', $hook = '', $data) {
+    _w3tc_caching_fragment($id, $group);
+    $fragment = w3tc_fragmentcache_get($id, $group);
+    if (false !== $fragment) {
+        if ($hook) {
+            global $wp_filter;
+            $wp_filter[$hook] = array();
+        }
+        return $fragment;
+    }
+    return  $data;
+}
+
+/**
+ * Ends the caching of output. Stores it and outputs the content
+ *
+ * @param string $id the fragment id
+ * @param string $group the fragment group
+ * @param bool $debug
+ */
+function w3tc_fragmentcache_end($id, $group = '', $debug = false) {
+    if (w3tc_is_caching_fragment($id, $group)) {
+        $content = ob_get_contents();
+        if ($debug)
+            $content = sprintf("\r\n".'<!-- fragment start (%s%s)-->'."\r\n".'%s'."\r\n".'<!-- fragment end (%1$s%2$s) cached at %s by W3 Total Cache expires in %d seconds -->'."\r\n", $group, $id,$content, date_i18n('Y-m-d H:i:s'), 1000);
+        w3tc_fragmentcache_store($id, $group, $content);
+        ob_end_flush();
+    }
+}
+
+
+/**
+ * Ends the caching of filter. Stores it and returns the content
+ *
+ * @param string $id the fragment id
+ * @param string $group the fragment group
+ * @param mixed $data
+ * @return mixed
+ */
+function w3tc_fragmentcache_filter_end($id, $group = '', $data) {
+    if (w3tc_is_caching_fragment($id, $group)) {
+        w3tc_fragmentcache_store($id, $group, $data);
+    }
+    return $data;
+}
+
+/**
+ * Stores an fragment
+ *
+ * @param $id
+ * @param string $group
+ * @param string $content
+ */
+function w3tc_fragmentcache_store($id, $group = '', $content) {
+   set_transient("{$group}{$id}", $content, 
+    1000 /* default expiration in a case its not catched by fc plugin */);
+}
+
+/**
+ * @param $id
+ * @param string $group
+ * @return object
+ */
+function w3tc_fragmentcache_get($id, $group = '') {
+    return get_transient("{$group}{$id}");
+}
+
+/**
+ * Flushes a fragment from the cache
+ * @param $id
+ * @param string $group
+ */
+function w3tc_fragmentcache_flush_fragment($id, $group = '') {
+    delete_transient("{$group}{$id}");
+}
+
+/**
+ * Checks wether page fragment caching is being done for the item
+ * @param string $id fragment id
+ * @param string $group which group fragment belongs too
+ * @return bool
+ */
+function w3tc_is_caching_fragment($id, $group = '') {
+    global $w3tc_caching_fragment;
+    return isset($w3tc_caching_fragment["{$group}{$id}"]) && $w3tc_caching_fragment["{$group}{$id}"];
+}
+
+/**
+ * Internal function, sets if page fragment by $id and $group is being cached
+ * @param string $id fragment id
+ * @param string $group which group fragment belongs too
+ */
+function _w3tc_caching_fragment($id, $group = '') {
+    global $w3tc_caching_fragment;
+    $w3tc_caching_fragment["{$group}{$id}"] = true;
+}
+
+/**
+ * @param string $extension
+ * @param string $setting
+ * @param null $config
+ * @param string $default
+ * @return null|array|bool|string|int returns null if key not set or provided default value
+ */
+function w3tc_get_extension_config($extension, $setting = '', $config = null, $default = '') {
+    /**
+     * @var W3_Config $config
+     */
+    if (is_null($config))
+        $config = w3_instance('W3_Config');
+    $val = null;
+    $extensions = $config->get_array('extensions.settings');
+    if ($setting && isset($extensions[$extension][$setting])) {
+        $val =  $extensions[$extension][$setting];
+    } elseif(empty($setting)) {
+        return $extensions[$extension];
+    } elseif (!empty($setting)) {
+        return $default;
+    }
+    return $val;
 }
 
 /**
@@ -309,6 +500,17 @@ function w3tc_varnish_flush_url($url) {
     return $w3_cacheflush->varnish_flush_url($url);
 }
 
+/**
+ * Shortcut for url varnish flush
+ */
+function w3tc_flush_all() {
+    /**
+     * @var $w3_cacheflush W3_CacheFlush
+     */
+    $w3_cacheflush = w3_instance('W3_CacheFlush');
+
+    $w3_cacheflush->flush_all();
+}
 
 /**
  * Deletes files.

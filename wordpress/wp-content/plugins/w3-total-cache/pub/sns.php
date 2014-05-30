@@ -10,14 +10,7 @@ try {
 }
 
 if (isset($message_object->Type) && isset($message_object->Message)) {
-    if ($message_object->Type == 'SubscriptionConfirmation') {
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $message_object->SubscribeURL);
-        curl_exec($ch);
-        curl_close($ch);
-        exit();
-    }
-    else if ($message_object->Type == 'Notification') {
+    if ($message_object->Type == 'Notification') {
         $w3tc_message = $message_object->Message;
         $w3tc_message_object = json_decode($w3tc_message);
 
@@ -29,7 +22,7 @@ if (isset($message_object->Type) && isset($message_object->Message)) {
             $_SERVER['HTTP_HOST'] = $w3tc_message_object->host;
         }
     }
-    else {
+    else if ($message_object->Type != 'SubscriptionConfirmation'){
         echo('Unsupported message type');
         exit();
     }
@@ -55,12 +48,12 @@ if (!defined('W3TC_DIR')) {
 
 if (!@is_dir(W3TC_DIR) || !file_exists(W3TC_DIR . '/inc/define.php')) {
     @header('X-Robots-Tag: noarchive, noodp, nosnippet');
-    die(sprintf('<strong>W3 Total Cache Error:</strong> some files appear to be missing or out of place. Please re-install plugin or remove <strong>%s</strong>.', dirname(__FILE__)));
+    echo(sprintf('<strong>W3 Total Cache Error:</strong> some files appear to be missing or out of place. Please re-install plugin or remove <strong>%s</strong>.', dirname(__FILE__)));
 }
 
 require_once W3TC_DIR . '/inc/define.php';
 
 $server = w3_instance('W3_Enterprise_SnsServer');
-$server->process_message($message);
+$server->process_message();
 
 ?>

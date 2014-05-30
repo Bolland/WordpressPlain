@@ -1,6 +1,9 @@
 <?php
 
 function relevanssi_build_index($extend = false) {
+	if (function_exists('wp_suspend_cache_addition')) 
+		wp_suspend_cache_addition(true);	// Thanks to Julien Mession
+	
 	global $wpdb, $relevanssi_variables;
 	$relevanssi_table = $relevanssi_variables['relevanssi_table'];
 
@@ -20,6 +23,19 @@ function relevanssi_build_index($extend = false) {
 		$restriction = "";
 	}
 
+	$valid_status_array = apply_filters('relevanssi_valid_status', array('publish', 'draft', 'private', 'pending', 'future'));
+	if (is_array($valid_status_array) && count($valid_status_array) > 0) {
+		$valid_status = array();
+		foreach ($valid_status_array as $status) {
+			$valid_status[] = "'$status'";
+		}
+		$valid_status = implode(',', $valid_status);
+	}
+	else {
+		// this really should never happen
+		$valid_status = "'publish', 'draft', 'private', 'pending', 'future'";
+	}
+	
 	$n = 0;
 	$size = 0;
 	
@@ -39,41 +55,49 @@ function relevanssi_build_index($extend = false) {
 			}
 		}
 
-        $q = "SELECT DISTINCT(post.ID)
-		FROM $wpdb->posts parent, $wpdb->posts post WHERE
-        (parent.post_status IN ('publish', 'draft', 'private', 'pending', 'future'))
-        AND (
-            (post.post_status='inherit'
-            AND post.post_parent=parent.ID)
-            OR
-            (parent.ID=post.ID)
-            OR
+        $q = "SELECT post.ID
+		FROM $wpdb->posts post
+		LEFT JOIN $wpdb->posts parent ON (post.post_parent=parent.ID)
+		WHERE
+			(post.post_status IN ($valid_status)
+			OR
 			(post.post_status='inherit'
-            AND post.post_parent=0)
-        )
+				AND(
+					(parent.ID is not null AND (parent.post_status IN ($valid_status)))
+					OR (post.post_parent=0)
+				)
+			))
 		$restriction";
+
 		update_option('relevanssi_index', '');
 	}
 	else {
 		// extending, so no truncate and skip the posts already in the index
 		$limit = get_option('relevanssi_index_limit', 200);
-		if ($limit > 0) {
+		if (is_numeric($limit) && $limit > 0) {
 			$size = $limit;
 			$limit = " LIMIT $limit";
 		}
-        $q = "SELECT DISTINCT(post.ID)
-		FROM $wpdb->posts parent, $wpdb->posts post WHERE
-        (parent.post_status IN ('publish', 'draft', 'private', 'pending', 'future'))
-        AND (
-            (post.post_status='inherit'
-            AND post.post_parent=parent.ID)
-            OR
-            (parent.ID=post.ID)
-            OR
+		else {
+			$limit = "";
+		}
+        $q = "SELECT post.ID
+		FROM $wpdb->posts post
+		LEFT JOIN $wpdb->posts parent ON (post.post_parent=parent.ID)
+		LEFT JOIN $relevanssi_table r ON (post.ID=r.doc)
+		WHERE
+		r.doc is null
+		AND
+			(post.post_status IN ($valid_status)
+			OR
 			(post.post_status='inherit'
-            AND post.post_parent=0)
-        )
-		AND post.ID NOT IN (SELECT DISTINCT(doc) FROM $relevanssi_table) $restriction $limit";
+				AND(
+					(parent.ID is not null AND (parent.post_status IN ($valid_status)))
+					OR (post.post_parent=0)
+				)
+			)
+		)
+		$restriction $limit";
 	}
 
 	$custom_fields = relevanssi_get_custom_fields();
@@ -93,6 +117,9 @@ function relevanssi_build_index($extend = false) {
 		. __((($size == 0) || (count($content) < $size)) ? "Indexing complete!" : "More to index...", "relevanssi")
 		. '</p></div>';
 	update_option('relevanssi_indexed', 'done');
+
+	if (function_exists('wp_suspend_cache_addition')) 
+		wp_suspend_cache_addition(false);	// Thanks to Julien Mession
 }
 
 // BEGIN modified by renaissancehack
@@ -188,7 +215,6 @@ function relevanssi_index_doc($indexpost, $remove_first = false, $custom_fields 
 		if (function_exists('relevanssi_remove_item')) {
 			relevanssi_remove_item($post->ID, 'post');
 		}
-		relevanssi_purge_excerpt_cache($post->ID);
 	}
 
 	// This needs to be here, after the call to relevanssi_remove_doc(), because otherwise
@@ -219,7 +245,7 @@ function relevanssi_index_doc($indexpost, $remove_first = false, $custom_fields 
 					$n++;
 					$insert_data[$pcom]['comment'] = $count;
 				}
-			}				
+			}
 		}
 	} //Added by OdditY END <-
 
@@ -283,7 +309,7 @@ function relevanssi_index_doc($indexpost, $remove_first = false, $custom_fields 
 
 	$index_titles = true;
 	if (apply_filters('relevanssi_index_titles', $index_titles)) {
-		$titles = relevanssi_tokenize($post->post_title);
+		$titles = relevanssi_tokenize(apply_filters('the_title', $post->post_title));
 
 		if (count($titles) > 0) {
 			foreach ($titles as $title => $count) {
@@ -298,7 +324,7 @@ function relevanssi_index_doc($indexpost, $remove_first = false, $custom_fields 
 		remove_shortcode('noindex');
 		add_shortcode('noindex', 'relevanssi_noindex_shortcode_indexing');
 
-		$contents = $post->post_content;
+		$contents = apply_filters('relevanssi_post_content', $post->post_content, $post);
 		
 		// Allow user to add extra content for Relevanssi to index
 		// Thanks to Alexander Gieg
@@ -314,10 +340,9 @@ function relevanssi_index_doc($indexpost, $remove_first = false, $custom_fields 
 					$My_WP_Table_Reloaded = new WP_Table_Reloaded_Controller_Frontend();
 				}
 				// TablePress support
-				if (defined('TABLEPRESS_ABSPATH')) {
-					include_once(TABLEPRESS_ABSPATH . 'controllers/controller-frontend.php');
-					$My_WP_Table_Reloaded = new TablePress_Frontend_Controller();
-					$My_WP_Table_Reloaded->init_shortcodes();
+				if ( defined( 'TABLEPRESS_ABSPATH' ) ) {
+					$My_TablePress_Controller = TablePress::load_controller( 'frontend' );
+					$My_TablePress_Controller->init_shortcodes();
 				}
 
 				$disable_shortcodes = get_option('relevanssi_disable_shortcodes');
@@ -325,13 +350,18 @@ function relevanssi_index_doc($indexpost, $remove_first = false, $custom_fields 
 				foreach ($shortcodes as $shortcode) {
 					remove_shortcode(trim($shortcode));
 				}
-				remove_shortcode('contact-form');		// Jetpack Contact Form causes an error message
+				remove_shortcode('contact-form');			// Jetpack Contact Form causes an error message
+				remove_shortcode('starrater');				// GD Star Rating rater shortcode causes problems
+				remove_shortcode('responsive-flipbook');	// Responsive Flipbook causes problems
 				
 				$post_before_shortcode = $post;
 				$contents = do_shortcode($contents);
 				$post = $post_before_shortcode;
 				
-				if (defined('TABLEPRESS_ABSPATH') || defined('WP_TABLE_RELOADED_ABSPATH')) {
+				if (defined('TABLEPRESS_ABSPATH')) {
+					unset($My_TablePress_Controller);
+				}
+				if (defined('WP_TABLE_RELOADED_ABSPATH')) {
 					unset($My_WP_Table_Reloaded);
 				}
 			}
@@ -354,6 +384,7 @@ function relevanssi_index_doc($indexpost, $remove_first = false, $custom_fields 
 
 		$contents = preg_replace('/<[a-zA-Z\/][^>]*>/', ' ', $contents);
 		$contents = strip_tags($contents);
+		$contents = apply_filters('relevanssi_post_content_before_tokenize', $contents, $post);
 		$contents = relevanssi_tokenize($contents, true, $min_word_length);
 	
 		if (count($contents) > 0) {
@@ -367,6 +398,8 @@ function relevanssi_index_doc($indexpost, $remove_first = false, $custom_fields 
 	$type = 'post';
 	if ($post->post_type == 'attachment') $type = 'attachment';
 	
+	$insert_data = apply_filters('relevanssi_indexing_data', $insert_data, $post);
+
 	$values = array();
 	foreach ($insert_data as $term => $data) {
 		$content = 0;
@@ -384,11 +417,15 @@ function relevanssi_index_doc($indexpost, $remove_first = false, $custom_fields 
 		$mysqlcolumn = 0;
 		extract($data);
 
+		$term = trim($term);
+
 		$value = $wpdb->prepare("(%d, %s, REVERSE(%s), %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %s, %s, %s, %d)",
 			$post->ID, $term, $term, $content, $title, $comment, $tag, $link, $author, $category, $excerpt, $taxonomy, $customfield, $type, $taxonomy_detail, $customfield_detail, $mysqlcolumn);
 
 		array_push($values, $value);
 	}
+	
+	$values = apply_filters('relevanssi_indexing_values', $values, $post);
 	
 	if (!empty($values)) {
 		$values = implode(', ', $values);
@@ -475,7 +512,7 @@ function relevanssi_update_child_posts($new_status, $old_status, $post) {
 //  and calls appropriate indexing function on child posts/attachments
     global $wpdb;
 
-    $index_statuses = array('publish', 'private', 'draft', 'pending', 'future');
+	$index_statuses = apply_filters('relevanssi_valid_status', array('publish', 'private', 'draft', 'pending', 'future'));
     if (($new_status == $old_status)
           || (in_array($new_status, $index_statuses) && in_array($old_status, $index_statuses))
           || (in_array($post->post_type, array('attachment', 'revision')))) {
@@ -512,7 +549,7 @@ function relevanssi_edit($post) {
     }
 // END added by renaissancehack
 
-	$index_statuses = array('publish', 'private', 'draft', 'pending', 'future');
+	$index_statuses = apply_filters('relevanssi_valid_status', array('publish', 'private', 'draft', 'pending', 'future'));
 	if (!in_array($post_status, $index_statuses)) {
  		// The post isn't supposed to be indexed anymore, remove it from index
  		relevanssi_remove_doc($post);
@@ -524,7 +561,6 @@ function relevanssi_edit($post) {
 
 function relevanssi_delete($post) {
 	relevanssi_remove_doc($post);
-	relevanssi_purge_excerpt_cache($post);
 }
 
 function relevanssi_publish($post, $bypassglobalpost = false) {
@@ -551,7 +587,7 @@ function relevanssi_insert_edit($post_id) {
 	    $post_status = $wpdb->get_var( "SELECT p.post_status FROM $wpdb->posts p, $wpdb->posts c WHERE c.ID=$post_id AND c.post_parent=p.ID" );
     }
 
-	$index_statuses = array('publish', 'private', 'draft', 'future', 'pending');
+	$index_statuses = apply_filters('relevanssi_valid_status', array('publish', 'private', 'draft', 'future', 'pending'));
 	if ( !in_array( $post_status, $index_statuses ) ) {
 		// The post isn't supposed to be indexed anymore, remove it from index
 		relevanssi_remove_doc( $post_id );
@@ -634,7 +670,7 @@ function relevanssi_get_comments($postID) {
 	$from = 0;
 
 	while ( true ) {
-		$sql = "SELECT 	comment_content, comment_author
+		$sql = "SELECT 	comment_ID, comment_content, comment_author
 				FROM 	$wpdb->comments
 				WHERE 	comment_post_ID = '$postID'
 				AND 	comment_approved = '1' 
@@ -643,10 +679,11 @@ function relevanssi_get_comments($postID) {
 		$comments = $wpdb->get_results($sql);
 		if (sizeof($comments) == 0) break;
 		foreach($comments as $comment) {
-			$comment_string .= $comment->comment_author . ' ' . $comment->comment_content . ' ';
+			$comment_string .= apply_filters('relevanssi_comment_content_to_index', $comment->comment_author . ' ' . $comment->comment_content . ' ', $comment->comment_ID);
 		}
 		$from += $to;
 	}
+	
 	return $comment_string;
 }
 

@@ -2,8 +2,8 @@
 
 // thanks to rvencu
 function relevanssi_wpml_filter($data) {
-	$use_filter = get_option('relevanssi_wpml_only_current');
-	if ('on' == $use_filter) {
+    $use_filter = get_option('relevanssi_wpml_only_current');
+    if ('on' == $use_filter) {
 		//save current blog language
 		$lang = get_bloginfo('language');
 		$filtered_hits = array();
@@ -12,10 +12,30 @@ function relevanssi_wpml_filter($data) {
 				switch_to_blog($hit->blog_id);
 			}
 			global $sitepress;
-			if (function_exists('icl_object_id') && $sitepress->is_translated_post_type($hit->post_type)) {
-			    if ($hit->ID == icl_object_id($hit->ID, $hit->post_type,false,ICL_LANGUAGE_CODE))
-			        $filtered_hits[] = $hit;
+
+			if (function_exists('icl_object_id') && !function_exists('pll_is_translated_post_type')) {
+				if ($sitepress->is_translated_post_type($hit->post_type)) {
+					if ($hit->ID == icl_object_id($hit->ID, $hit->post_type, false, ICL_LANGUAGE_CODE)) $filtered_hits[] = $hit;
+				}
+				else {
+					$filtered_hits[] = $hit;
+				}
 			}
+			elseif (function_exists('icl_object_id') && function_exists('pll_is_translated_post_type')) {
+				if (pll_is_translated_post_type($hit->post_type)) {
+					global $polylang;
+					if ($polylang->model->get_post_language($hit->ID)->slug == ICL_LANGUAGE_CODE) {
+						$filtered_hits[] = $hit;
+					}
+					else if ($hit->ID == icl_object_id($hit->ID, $hit->post_type, false, ICL_LANGUAGE_CODE)) {
+						$filtered_hits[] = $hit;
+					}
+				}
+				else {
+					$filtered_hits[] = $hit;
+				}
+			}
+
 			// if there is no WPML but the target blog has identical language with current blog,
 			// we use the hits. Note en-US is not identical to en-GB!
 			elseif (get_bloginfo('language') == $lang) {
@@ -118,11 +138,8 @@ function relevanssi_update_log($query, $hits) {
 	    }
 	}	
 	
-	if (get_option('relevanssi_log_queries_with_ip') == "on") {
-		$q = $wpdb->prepare("INSERT INTO " . $relevanssi_variables['log_table'] . " (query, hits, user_id, ip) VALUES (%s, %d, %d, %s)", $query, intval($hits), $user->ID, $_SERVER['REMOTE_ADDR']);
-	} else {
-		$q = $wpdb->prepare("INSERT INTO " . $relevanssi_variables['log_table'] . " (query, hits, user_id, ip) VALUES (%s, %d, %d, '')", $query, intval($hits), $user->ID, $_SERVER['REMOTE_ADDR']);
-	}		
+	get_option('relevanssi_log_queries_with_ip') == "on" ? $ip = $_SERVER['REMOTE_ADDR'] : $ip = '';
+	$q = $wpdb->prepare("INSERT INTO " . $relevanssi_variables['log_table'] . " (query, hits, user_id, ip, time) VALUES (%s, %d, %d, %s, NOW())", $query, intval($hits), $user->ID, $ip);
 	$wpdb->query($q);
 }
 
@@ -155,6 +172,7 @@ function relevanssi_default_post_ok($post_ok, $doc) {
 			// Basic WordPress version
 			$type = relevanssi_get_post_type($doc);
 			$cap = 'read_private_' . $type . 's';
+			$cap = apply_filters('relevanssi_private_cap', $cap);
 			if (current_user_can($cap)) {
 				$post_ok = true;
 			}
@@ -208,6 +226,8 @@ function relevanssi_s2member_level($doc) {
 
 function relevanssi_populate_array($matches) {
 	global $relevanssi_post_array, $relevanssi_post_types, $wpdb;
+	if (function_exists('wp_suspend_cache_addition')) 
+		wp_suspend_cache_addition(true);
 	
 	$ids = array();
 	foreach ($matches as $match) {
@@ -220,6 +240,9 @@ function relevanssi_populate_array($matches) {
 		$relevanssi_post_array[$post->ID] = $post;
 		$relevanssi_post_types[$post->ID] = $post->post_type;
 	}
+
+	if (function_exists('wp_suspend_cache_addition')) 
+		wp_suspend_cache_addition(false);
 }
 
 function relevanssi_get_term_taxonomy($id) {
@@ -274,10 +297,12 @@ function relevanssi_recognize_phrases($q) {
 	if (count($phrases) > 0) {
 		$phrase_matches = array();
 		foreach ($phrases as $phrase) {
-			$phrase = $wpdb->escape($phrase);
+			$phrase = like_escape(esc_sql($phrase));
+			"on" == get_option("relevanssi_index_excerpt") ? $excerpt = " OR post_excerpt LIKE '%$phrase%'" : $excerpt = "";
 			$query = "SELECT ID FROM $wpdb->posts 
-				WHERE (post_content LIKE '%$phrase%' OR post_title LIKE '%$phrase%')
+				WHERE (post_content LIKE '%$phrase%' OR post_title LIKE '%$phrase%' $excerpt)
 				AND post_status IN ('publish', 'draft', 'private', 'pending', 'future', 'inherit')";
+			// Clean: $phrase is escaped
 			
 			$docs = $wpdb->get_results($query);
 
@@ -293,6 +318,7 @@ function relevanssi_recognize_phrases($q) {
 			$query = "SELECT ID FROM $wpdb->posts as p, $wpdb->term_relationships as r, $wpdb->term_taxonomy as s, $wpdb->terms as t
 				WHERE r.term_taxonomy_id = s.term_taxonomy_id AND s.term_id = t.term_id AND p.ID = r.object_id
 				AND t.name LIKE '%$phrase%' AND p.post_status IN ('publish', 'draft', 'private', 'pending', 'future', 'inherit')";
+			// Clean: $phrase is escaped
 
 			$docs = $wpdb->get_results($query);
 			if (is_array($docs)) {
@@ -309,6 +335,7 @@ function relevanssi_recognize_phrases($q) {
               WHERE p.ID = m.post_id
               AND m.meta_value LIKE '%$phrase%'
               AND p.post_status IN ('publish', 'draft', 'private', 'pending', 'future', 'inherit')";
+			// Clean: $phrase is escaped
 
 			$docs = $wpdb->get_results($query);
 			if (is_array($docs)) {
@@ -409,11 +436,15 @@ function relevanssi_remove_punct($a) {
 		$a = strip_tags($a);
 		$a = stripslashes($a);
 
+		$a = str_replace('ß', 'ss', $a);
+
 		$a = str_replace("·", '', $a);
 		$a = str_replace("…", '', $a);
 		$a = str_replace("€", '', $a);
 		$a = str_replace("&shy;", '', $a);
 
+		$a = str_replace(chr(194) . chr(160), ' ', $a);
+		$a = str_replace("&nbsp;", ' ', $a);
 		$a = str_replace('&#8217;', ' ', $a);
 		$a = str_replace("'", ' ', $a);
 		$a = str_replace("’", ' ', $a);
@@ -448,10 +479,17 @@ function relevanssi_prevent_default_request( $request, $query ) {
 			  	return $request;
 			}
 		}
-		
+		if (is_array($query->query_vars['post_type']) && in_array('forum', $query->query_vars['post_type'])) {
+			// this is a BBPress search; do not meddle
+			return $request;
+		}		
 		$admin_search_ok = true;
 		$admin_search_ok = apply_filters('relevanssi_admin_search_ok', $admin_search_ok, $query );
-		if (!is_admin())
+		
+		$prevent = true;
+		$prevent = apply_filters('relevanssi_prevent_default_request', $prevent, $query );
+		
+		if (!is_admin() && $prevent )
 			$request = "SELECT * FROM $wpdb->posts WHERE 1=2";		
 		else if ('on' == get_option('relevanssi_admin_search') && $admin_search_ok )
 			$request = "SELECT * FROM $wpdb->posts WHERE 1=2";
@@ -511,6 +549,7 @@ function relevanssi_tokenize($str, $remove_stops = true, $min_word_length = -1) 
 		
 		if ($accept) {
 			$t = relevanssi_mb_trim($t);
+			if (is_numeric($t)) $t = " $t";		// $t ends up as an array index, and numbers just don't work there
 			if (!isset($tokens[$t])) {
 				$tokens[$t] = 1;
 			}
@@ -521,7 +560,6 @@ function relevanssi_tokenize($str, $remove_stops = true, $min_word_length = -1) 
 		
 		$t = strtok("\n\t ");
 	}
-
 	return $tokens;
 }
 
@@ -585,6 +623,105 @@ function relevanssi_get_term_tax_id($field, $id, $taxonomy) {
 					"SELECT term_taxonomy_id
 					FROM $wpdb->term_taxonomy
 					WHERE term_id = $id AND taxonomy = '$taxonomy'");
+}
+
+/**
+ * Takes in a search query, returns it with synonyms added.
+ */
+function relevanssi_add_synonyms($q) {
+	if (empty($q)) return $q;
+	
+	$synonym_data = get_option('relevanssi_synonyms');
+	if ($synonym_data) {
+		$synonyms = array();
+		if (function_exists('mb_strtolower')) {
+			$synonym_data = mb_strtolower($synonym_data);
+		}
+		else {
+			$synonym_data = strtolower($synonym_data);
+		}
+		$pairs = explode(";", $synonym_data);
+		foreach ($pairs as $pair) {
+			$parts = explode("=", $pair);
+			$key = strval(trim($parts[0]));
+			$value = trim($parts[1]);
+			$synonyms[$key][$value] = true;
+		}
+		if (count($synonyms) > 0) {
+			$new_terms = array();
+			$terms = array_keys(relevanssi_tokenize($q, false)); // remove stopwords is false here
+			if (!in_array($q, $terms)) $terms[] = $q;
+			
+			foreach ($terms as $term) {
+				if (in_array(strval($term), array_keys($synonyms))) {		// strval, otherwise numbers cause problems
+					if (isset($synonyms[strval($term)])) {		// necessary, otherwise terms like "02" can cause problems
+						$new_terms = array_merge($new_terms, array_keys($synonyms[strval($term)]));
+					}
+				}
+			}
+			if (count($new_terms) > 0) {
+				foreach ($new_terms as $new_term) {
+					$q .= " $new_term";
+				}
+			}
+		}
+	}
+	return $q;
+}
+
+/* Helper function that does mb_stripos, falls back to mb_strpos and mb_strtoupper
+ * if that cannot be found, and falls back to just strpos if even that is not possible.
+ */
+function relevanssi_stripos($content, $term, $offset) {
+	if (function_exists('mb_stripos')) {
+		$pos = ("" == $content) ? false : mb_stripos($content, $term, $offset);
+	}
+	else if (function_exists('mb_strpos') && function_exists('mb_strtoupper') && function_exists('mb_substr')) {
+		$pos = mb_strpos(mb_strtoupper($content), mb_strtoupper($term), $offset);
+	}
+	else {
+		$pos = strpos(strtoupper($content), strtoupper($term), $offset);
+	}
+	return $pos;
+}
+
+/* Function to close tags in a bit of HTML code. Used to make sure no tags are left open
+ * in excerpts. This method is not foolproof, but it's good enough for now.
+ */
+function relevanssi_close_tags($html) {
+    preg_match_all('#<(?!meta|img|br|hr|input\b)\b([a-z]+)(?: .*)?(?<![/|/ ])>#iU', $html, $result);
+    $openedtags = $result[1];
+    preg_match_all('#</([a-z]+)>#iU', $html, $result);
+    $closedtags = $result[1];
+    $len_opened = count($openedtags);
+    if (count($closedtags) == $len_opened) {
+        return $html;
+    }
+    $openedtags = array_reverse($openedtags);
+    for ($i=0; $i < $len_opened; $i++) {
+        if (!in_array($openedtags[$i], $closedtags)) {
+            $html .= '</'.$openedtags[$i].'>';
+        } else {
+            unset($closedtags[array_search($openedtags[$i], $closedtags)]);
+        }
+    }
+    return $html;
+} 
+
+/* Prints out post title with highlighting.
+ */
+function relevanssi_the_title() {
+	global $post;
+	if (empty($post->post_highlighted_title)) $post->post_highlighted_title = $post->post_title;
+	echo $post->post_highlighted_title;
+}
+
+/* Returns the post title with highlighting.
+ */
+function relevanssi_get_the_title($post_id) {
+	$post = get_post($post_id);
+	if (empty($post->post_highlighted_title)) $post->post_highlighted_title = $post->post_title;
+	return $post->post_highlighted_title;
 }
 
 ?>

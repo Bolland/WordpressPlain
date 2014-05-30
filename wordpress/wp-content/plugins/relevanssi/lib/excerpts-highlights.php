@@ -20,6 +20,9 @@ function relevanssi_do_excerpt($t_post, $query) {
 
 	$remove_stopwords = false;
 	$terms = relevanssi_tokenize($query, $remove_stopwords, -1, false);
+
+	// These shortcodes cause problems with Relevanssi excerpts
+	remove_shortcode('layerslider');
 	
 	$content = apply_filters('relevanssi_pre_excerpt_content', $post->post_content, $post, $query);
 	$content = apply_filters('the_content', $content);
@@ -36,6 +39,8 @@ function relevanssi_do_excerpt($t_post, $query) {
 
 	if (get_option("relevanssi_index_comments") != 'none') {
 		$comment_content = relevanssi_get_comments($post->ID);
+		$comment_content = preg_replace('/(<\/[^>]+?>)(<[^>\/][^>]*?>)/', '$1 $2', $comment_content); // add spaces between tags to avoid getting words stuck together
+		$comment_content = strip_tags($comment_content, get_option('relevanssi_excerpt_allowable_tags', '')); // this removes the tags, but leaves the content
 		$comment_excerpts = relevanssi_create_excerpt($comment_content, $terms, $query);
 		if ($comment_excerpts[1] > $excerpt_data[1]) {
 			$excerpt_data = $comment_excerpts;
@@ -53,14 +58,8 @@ function relevanssi_do_excerpt($t_post, $query) {
 	$start = $excerpt_data[2];
 
 	$excerpt = $excerpt_data[0];	
-
-	// This shuffle with excerpts is done to avoid doubled Read more links in some cases.
-	$excerpt_save = $post->post_excerpt;
-	$post->post_excerpt = '';
-	$excerpt = apply_filters('get_the_excerpt', $excerpt);
-	$post->post_excerpt = $excerpt_save;
-
 	$excerpt = trim($excerpt);
+	$excerpt = apply_filters('relevanssi_excerpt', $excerpt);
 
 	$ellipsis = apply_filters('relevanssi_ellipsis', '...');
 
@@ -71,12 +70,15 @@ function relevanssi_do_excerpt($t_post, $query) {
 		}
 	}
 
-	if (!$start) {
+	$excerpt = relevanssi_close_tags($excerpt);
+
+	if (!$start && !empty($excerpt)) {
 		$excerpt = $ellipsis . $excerpt;
 		// do not add three dots to the beginning of the post
 	}
 
-	$excerpt = $excerpt . $ellipsis;
+	if (!empty($excerpt))
+		$excerpt = $excerpt . $ellipsis;
 
 	if (relevanssi_s2member_level($post->ID) == 1) $excerpt = $post->post_excerpt;
 
@@ -106,79 +108,80 @@ function relevanssi_create_excerpt($content, $terms, $query) {
 	$non_phrase_terms = array();
 	foreach ($phrases as $phrase) {
 		$phrase_terms = array_keys(relevanssi_tokenize($phrase, $remove_stopwords = false));
-		foreach ($terms as $term) {
+		foreach (array_keys($terms) as $term) {
 			if (!in_array($term, $phrase_terms)) {
 				$non_phrase_terms[] = $term;
 			}
 		}
+		
 		$terms = $non_phrase_terms;
-		$terms[] = $phrase;
+		$terms[$phrase] = 1;
 	}
 
-	usort($terms, 'relevanssi_strlen_sort');
-	
-/*
-	$highlight = get_option('relevanssi_highlight');
-	if ("none" != $highlight) {
-		if (!is_admin()) {
-			$content = html_entity_decode($content, ENT_QUOTES, 'UTF-8');
-			// html_entity_decode to avoid highlighting from breaking HTML entities
-		}
-	}
-*/
+	uksort($terms, 'relevanssi_strlen_sort');
 	
 	$start = false;
 	if ("chars" == $type) {
-		$term_hits = 0;
+		$term_positions = array();
 		foreach (array_keys($terms) as $term) {
+			$term = trim($term);
+			$term_key = $term;
 			$term = " $term";
-			if (function_exists('mb_stripos')) {
-				$pos = ("" == $content) ? false : mb_stripos($content, $term);
-			}
-			else if (function_exists('mb_strpos') && function_exists('mb_strtoupper') && function_exists('mb_substr')) {
-				$pos = mb_strpos($content, $term);
-				if (false === $pos) {
-					$titlecased = mb_strtoupper(mb_substr($term, 0, 1)) . mb_substr($term, 1);
-					$pos = mb_strpos($content, $titlecased);
-					if (false === $pos) {
-						$pos = mb_strpos($content, mb_strtoupper($term));
-					}
-				}
-			}
-			else {
-				$pos = strpos($content, $term);
-				if (false === $pos) {
-					$titlecased = strtoupper(substr($term, 0, 1)) . substr($term, 1);
-					$pos = strpos($content, $titlecased);
-					if (false === $pos) {
-						$pos = strpos($content, strtoupper($term));
-					}
-				}
-			}
-			
-			if (false !== $pos) {
-				$term_hits++;
-				if ($term_hits > $best_excerpt_term_hits) {
-					$best_excerpt_term_hits = $term_hits;
-					if ($pos + strlen($term) < $excerpt_length) {
-						if (function_exists('mb_substr'))
-							$excerpt = mb_substr($content, 0, $excerpt_length);
-						else
-							$excerpt = substr($content, 0, $excerpt_length);
-						$start = true;
-					}
-					else {
-						$half = floor($excerpt_length/2);
-						$pos = $pos - $half;
-						if (function_exists('mb_substr'))
-							$excerpt = mb_substr($content, $pos, $excerpt_length);
-						else
-							$excerpt = substr($content, $pos, $excerpt_length);
-					}
+			$pos = 0;
+			$n = 0;
+			while (false !== $pos) {
+				$pos = relevanssi_stripos($content, $term, $pos);
+				if (false !== $pos) {
+					$term_positions[$pos] = $term_key;
+					$pos = $pos + strlen($term);
 				}
 			}
 		}
+		ksort($term_positions);
+		$positions = array_keys($term_positions);
+		$best_position = 0;
+		$best_position_hits = 0;
+		$quarter = floor($excerpt_length/4); // adjustment, so the excerpt doesn't start with the search term
+		for ($i = 0; $i < count($positions); $i++) {
+			$key = $positions[$i];
+			$key = $key - $quarter;
+			if ($key < 0) $key = 0;
+			
+			$j = $i + 1; 
+			
+			$this_excerpt_terms = array();
+			if (isset($term_positions[$key])) $this_excerpt_terms[$term_positions[$key]] = true;
+			
+			while (isset($positions[$j])) {
+				if (isset($positions[$j])) {
+					$next_key = $positions[$j];
+				}
+				
+				if ($key + $excerpt_length > $next_key) {
+					$this_excerpt_terms[$term_positions[$next_key]] = true;
+				}
+				else {
+					break;		// farther than the excerpt length
+				}
+				$j++;
+			}
+			
+			if (count($this_excerpt_terms) > $best_position_hits) {
+				$best_position_hits = count($this_excerpt_terms);
+				$best_position = $key;
+			}
+		}
 		
+		if ($best_position + $excerpt_length < strlen($content)) {
+			if (function_exists('mb_substr'))
+				$excerpt = mb_substr($content, $best_position, $excerpt_length);
+			else
+				$excerpt = substr($content, $best_position, $excerpt_length);
+		}
+		
+		if ($best_position == 0) $start = true;
+		
+
 		if ("" == $excerpt) {
 			if (function_exists('mb_substr'))
 				$excerpt = mb_substr($content, 0, $excerpt_length);
@@ -240,6 +243,7 @@ function relevanssi_create_excerpt($content, $terms, $query) {
 				if (false !== $pos) {
 					$term_hits++;
 					if (0 == $i) $start = true;
+			
 					if ($term_hits > $best_excerpt_term_hits) {
 						$best_excerpt_term_hits = $term_hits;
 						$excerpt = $excerpt_slice;
@@ -274,10 +278,11 @@ function relevanssi_highlight_in_docs($content) {
 			if ( count( $args ) > 1 )
 				parse_str( $args[1], $query );
 	
-			if (substr($referrer, 0, strlen($_SERVER['SERVER_NAME'])) == $_SERVER['SERVER_NAME']) {
+			if (stripos($referrer, $_SERVER['SERVER_NAME']) !== false) {		
 				// Local search
 				if (isset($query['s'])) {
-					$content = relevanssi_highlight_terms($content, $query['s']);
+					$q = relevanssi_add_synonyms($query['s']);
+					$content = relevanssi_highlight_terms($content, $q);
 				}
 			}
 			if (function_exists('relevanssi_nonlocal_highlighting')) {
@@ -359,7 +364,7 @@ function relevanssi_highlight_terms($excerpt, $query) {
 		$terms[] = $phrase;
 	}
 
-	usort($terms, 'relevanssi_strlen_sort');
+	uksort($terms, 'relevanssi_strlen_sort');
 
 	get_option('relevanssi_word_boundaries', 'on') == 'on' ? $word_boundaries = true : $word_boundaries = false;
 	foreach ($terms as $term) {

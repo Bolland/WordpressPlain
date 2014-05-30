@@ -3,18 +3,18 @@
 
 <table class="form-table">
     <tr>
-        <th>Fragment Cache:</th>
+        <th><?php w3_e_config_label('fragmentcache.enabled', 'general') ?></th>
         <td>
             <?php $this->checkbox('fragmentcache.enabled') ?>&nbsp;<strong>Enable</strong></label>
             <br /><span class="description">Fragment caching greatly increases performance for highly themes and plugins that use the <a href="http://codex.wordpress.org/Transients_API" target="_blank">Transient <acronym title="Application Programming Interface">API</acronym></a>.</span>
         </td>
     </tr>
     <tr>
-        <th>Fragment Cache Method:</th>
+        <th><?php w3_e_config_label('fragmentcache.engine', 'general') ?></th>
         <td>
             <select name="fragmentcache.engine" <?php $this->sealing_disabled('fragmentcache'); ?>>
                 <optgroup label="Shared Server:">
-                    <option value="file"<?php selected($this->_config->get_string('fragmentcache.engine'), 'file'); ?>>Disk</option>
+                    <option value="file" <?php selected($this->_config->get_string('fragmentcache.engine'), 'file'); ?>>Disk</option>
                 </optgroup>
                 <optgroup label="Dedicated / Virtual Server:">
                     <option value="apc"<?php selected($this->_config->get_string('fragmentcache.engine'), 'apc'); ?><?php if (! $check_apc): ?> disabled="disabled"<?php endif; ?>>Opcode: Alternative PHP Cache (APC)</option>
@@ -28,7 +28,7 @@
             </select>
         </td>
     </tr>
-    <?php if ($this->is_network_and_master() && !w3_force_master()): ?>
+    <?php if (is_network_admin() && !w3_force_master()): ?>
     <tr>
         <th>Network policy:</th>
         <td>

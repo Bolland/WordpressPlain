@@ -1,10 +1,10 @@
 <?php
 /*
-Plugin Name: TAC (Theme Authenticity Checker)
+Plugin Name: Theme Authenticity Checker (TAC)
 Plugin URI: http://builtbackwards.com/projects/tac/
-Description: TAC scans all of your theme files for potentially malicious or unwanted code.
+Description: Theme Authenticity Checker scans all of your theme files for potentially malicious or unwanted code.
 Author: builtBackwards
-Version: 1.4
+Version: 1.5.2
 Author URI: http://builtbackwards.com/
 */
 
@@ -27,6 +27,10 @@ Author URI: http://builtbackwards.com/
 
 function tac_check_theme($template_files, $theme_title) {
 	$static_count = 0;
+        $bad_lines = null;
+        $static_urls = null;
+        $static_count = 0;
+        
 	foreach ($template_files as $tfile)
 	{	
 		/*
@@ -95,7 +99,9 @@ function tac_check_theme($template_files, $theme_title) {
 function tac_make_edit_link($tfile, $theme_title) {
 	// Assemble the HTML links for editing files with the built-in WP theme editor
 	
-	if ($GLOBALS['wp_version'] >= "2.6") {
+	if ($GLOBALS['wp_version'] >= "2.9") {
+		return "<div class=\"file-path\"><a href=\"theme-editor.php?file=/" . substr(stristr($tfile, "themes"), 0) . "&amp;theme=" . urlencode($theme_title) ."&amp;dir=theme\">" . substr(stristr($tfile, "wp-content"), 0) . " [Edit]</a></div>";	
+	} elseif ($GLOBALS['wp_version'] >= "2.6") {
 		return "<div class=\"file-path\"><a href=\"theme-editor.php?file=/" . substr(stristr($tfile, "themes"), 0) . "&amp;theme=" . urlencode($theme_title) ."\">" . substr(stristr($tfile, "wp-content"), 0) . " [Edit]</a></div>";
 	} else {
 		return "<div class=\"file-path\"><a href=\"theme-editor.php?file=" . substr(stristr($tfile, "wp-content"), 0) . "&amp;theme=" . urlencode($theme_title) ."\">" . substr(stristr($tfile, "wp-content"), 0) ." [Edit]</a></div>";
@@ -122,7 +128,7 @@ function tac_get_template_files($template) {
 
 function tac_init() {
 	if ( function_exists('add_submenu_page') )
-		$page = add_submenu_page('themes.php',__('TAC'), __('TAC'), '10', 'tac.php', 'tac');
+		$page = add_submenu_page('themes.php',__('Theme Authenticity Checker (TAC)'), __('TAC'), 'update_plugins', 'tac.php', 'tac');
 }
 
 add_action('admin_menu', 'tac_init');
@@ -140,10 +146,10 @@ function tac() {
 	}
 </script>	
 <h2>
-    <?php _e('TAC (Theme Authenticity Checker)'); ?>
+    <?php _e('Theme Authenticity Checker (TAC)'); ?>
 </h2>
 <div class="pinfo">
-    TAC checks themes for malicious or potentially unwanted code.<br/>
+    Theme Authenticity Checker checks themes for malicious or potentially unwanted code.<br/>
     For more info please go to the plugin page: <a href="http://builtbackwards.com/projects/tac/">http://builtbackwards.com/projects/tac/</a><br/><br/>
 	To submit bugs, suggestions, or comments please post in the <a href="http://wordpress.org/tags/tac">WordPress.org Forum</a>.
 </div>
@@ -159,12 +165,21 @@ function tac() {
 		$author = $themes[$theme_name]['Author'];
 		$screenshot = $themes[$theme_name]['Screenshot'];
 		$stylesheet_dir = $themes[$theme_name]['Stylesheet Dir'];
+		
+		if ($GLOBALS['wp_version'] >= "2.9") {
+			$theme_root_uri = $themes[$theme_name]['Theme Root URI'];
+			$template = $themes[$theme_name]['Template'];
+		}
 
 		$results = tac_check_theme($template_files, $title);
 	?>
     <div id="tacthemes">
-        <?php if ( $screenshot ) : ?>
-        	<img src="<?php echo get_option('siteurl') . '/wp-content' . str_replace('wp-content', '', $stylesheet_dir) . '/' . $screenshot; ?>" alt="" />
+        <?php if ( $screenshot ) : 
+			if ($GLOBALS['wp_version'] >= "2.9") : ?>
+				<img src="<?php echo $theme_root_uri.'/'.$template.'/'.$screenshot.'"'."alt=\"$title Screenshot\""; ?> />
+			<?php else : ?>
+				<img src="<?php echo get_option('siteurl') . '/wp-content' . str_replace('wp-content', '', $stylesheet_dir) . '/' . $screenshot.'"'."alt=\"$title Screenshot\""; ?> />			
+			<?php endif; ?>
         <?php else : ?>
         	<div class="tacnoimg">No Screenshot Found</div>
         <?php endif; ?>

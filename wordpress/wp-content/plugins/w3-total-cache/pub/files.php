@@ -20,7 +20,7 @@ if (!defined('W3TC_DIR')) {
 
 if (!@is_dir(W3TC_DIR) || !file_exists(W3TC_DIR . '/inc/define.php')) {
     @header('X-Robots-Tag: noarchive, noodp, nosnippet');
-    die(sprintf('<strong>W3 Total Cache Error:</strong> some files appear to be missing or out of place. Please re-install plugin or remove <strong>%s</strong>.', dirname(__FILE__)));
+    echo(sprintf('<strong>W3 Total Cache Error:</strong> some files appear to be missing or out of place. Please re-install plugin or remove <strong>%s</strong>.', dirname(__FILE__)));
 }
 
 require_once W3TC_DIR . '/inc/define.php';
@@ -39,7 +39,12 @@ if (file_exists($attachment_location) && $nonce == $stored_nonce && $stored_atta
     header("Content-Length:".filesize($attachment_location));
     header("Content-Disposition: attachment; filename=" . basename($attachment_location));
 
-    readfile($attachment_location);
+    $file = fopen($attachment_location, 'rb');
+    if ( $file !== false ) {
+        fpassthru($file);
+        fclose($file);
+    }
+
     w3tc_file_log('success', $attachment_location);
     die();
 } elseif ($nonce != $stored_nonce || $stored_attachment != $attachment_location) {

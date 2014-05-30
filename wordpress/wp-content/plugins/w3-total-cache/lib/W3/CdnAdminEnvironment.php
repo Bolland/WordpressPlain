@@ -53,7 +53,7 @@ class W3_CdnAdminEnvironment {
             }
 
             if (!wp_next_scheduled('w3_cdn_cron_queue_process')) {
-                wp_schedule_event(current_time('timestamp'), 
+                wp_schedule_event(time(), 
                     'w3_cdn_cron_queue_process', 'w3_cdn_cron_queue_process');
             }
         } else {
@@ -70,7 +70,7 @@ class W3_CdnAdminEnvironment {
             }
 
             if (!wp_next_scheduled('w3_cdn_cron_upload')) {
-                wp_schedule_event(current_time('timestamp'), 
+                wp_schedule_event(time(), 
                     'w3_cdn_cron_upload', 'w3_cdn_cron_upload');
             }
         } else {
@@ -141,6 +141,21 @@ class W3_CdnAdminEnvironment {
     }
 
     /**
+     * @param W3_Config $config
+     * @return array|null
+     */
+    function get_instructions($config) {
+        if (!$config->get_boolean('cdn.enabled'))
+            return null;
+
+        $instructions = array();
+        $instructions[] = array('title'=>__('CDN module: Required Database SQL', 'w3-total-cache'),
+            'content' => $this->generate_table_sql(), 'area' => 'database');
+
+        return $instructions;
+    }
+
+    /**
      * Generate rules for FTP
      **/
     public function rules_generate_for_ftp($config) {
@@ -163,10 +178,17 @@ class W3_CdnAdminEnvironment {
         global $wpdb;
 
         if ($drop) {
-            $sql = sprintf('DROP TABLE IF EXISTS `%s%s`', $wpdb->prefix, W3TC_CDN_TABLE_QUEUE);
+            $sql = sprintf('DROP TABLE IF EXISTS `%s%s`;', $wpdb->prefix, W3TC_CDN_TABLE_QUEUE);
 
             $wpdb->query($sql);
         }
+
+        $charset_collate = '';
+
+        if ( ! empty($wpdb->charset) )
+            $charset_collate = "DEFAULT CHARACTER SET $wpdb->charset";
+        if ( ! empty($wpdb->collate) )
+            $charset_collate .= " COLLATE $wpdb->collate";
 
         $sql = sprintf("CREATE TABLE IF NOT EXISTS `%s%s` (
             `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
@@ -176,9 +198,8 @@ class W3_CdnAdminEnvironment {
             `last_error` varchar(150) NOT NULL DEFAULT '',
             `date` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
             PRIMARY KEY (`id`),
-            UNIQUE KEY `path` (`local_path`, `remote_path`),
             KEY `date` (`date`)
-        ) /*!40100 CHARACTER SET latin1 */", $wpdb->prefix, W3TC_CDN_TABLE_QUEUE);
+        ) $charset_collate;", $wpdb->prefix, W3TC_CDN_TABLE_QUEUE);
 
         $wpdb->query($sql);
 
@@ -199,7 +220,29 @@ class W3_CdnAdminEnvironment {
         $wpdb->query($sql);
     }
 
+    private function generate_table_sql() {
+        global $wpdb;
+        $charset_collate = '';
 
+        if ( ! empty($wpdb->charset) )
+            $charset_collate = "DEFAULT CHARACTER SET $wpdb->charset";
+        if ( ! empty($wpdb->collate) )
+            $charset_collate .= " COLLATE $wpdb->collate";
+
+        $sql = sprintf('DROP TABLE IF EXISTS `%s%s`;', $wpdb->prefix, W3TC_CDN_TABLE_QUEUE);
+        $sql .= "\n" . sprintf("CREATE TABLE IF NOT EXISTS `%s%s` (
+            `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+            `local_path` varchar(500) NOT NULL DEFAULT '',
+            `remote_path` varchar(500) NOT NULL DEFAULT '',
+            `command` tinyint(1) unsigned NOT NULL DEFAULT '0' COMMENT '1 - Upload, 2 - Delete, 3 - Purge',
+            `last_error` varchar(150) NOT NULL DEFAULT '',
+            `date` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+            PRIMARY KEY (`id`),
+            KEY `date` (`date`)
+        ) $charset_collate;", $wpdb->prefix, W3TC_CDN_TABLE_QUEUE);
+
+        return $sql;
+    }
 
     /**
      * schedules
@@ -280,7 +323,7 @@ class W3_CdnAdminEnvironment {
         $w3_sharedRules = w3_instance('W3_SharedRules');
 
         $rules = '';
-        if ($w3_dispatcher->canonical_generated_by($config) == 'cdn')
+        if ($w3_dispatcher->canonical_generated_by($config, $cdnftp) == 'cdn')
             $rules .= $w3_sharedRules->canonical($config, $cdnftp);
         if ($w3_dispatcher->allow_origin_generated_by($config) == 'cdn')
             $rules .= $w3_sharedRules->allow_origin($config, $cdnftp);

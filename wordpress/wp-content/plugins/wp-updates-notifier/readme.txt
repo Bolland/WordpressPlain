@@ -3,8 +3,8 @@ Contributors: l3rady
 Donate link: http://l3rady.com/donate
 Tags: admin, theme, monitor, plugin, notification, upgrade, security
 Requires at least: 3.1
-Tested up to: 3.4.2
-Stable tag: 1.3.2
+Tested up to: 3.8.1
+Stable tag: 1.4.1
 
 Sends email to notify you if there are any updates for your WordPress site. Can notify about core, plugin and theme updates.
 
@@ -35,6 +35,7 @@ This plugin is a fork of [Update Notifier](http://wordpress.org/extend/plugins/u
 
 *Languages*
 
+- French by [Christophe Catarina](http://www.ordilibre.com/) - *Added 03 July 2013*
 - German by [Alexander Pfabel](http://alexander.pfabel.de/) - *Added 02 October 2012*
 
 == Installation ==
@@ -51,6 +52,16 @@ This plugin is a fork of [Update Notifier](http://wordpress.org/extend/plugins/u
 2. Email alert
 
 == Changelog ==
+
+= 1.4.1 =
+* Switch from using site_url() to home_url() in email subject line so not to link to a 404 page.
+
+= 1.4 =
+* Added external cron method allowing users check for updates as often or as little as they want
+* Added sc_wpun_get_options_filter and sc_wpun_put_options_filter filters to allow filtering of this plugins settings
+* Now using wp_get_schedules() rather than statically assigned schedules. This allows admins to set their own schedules such as a weekly one
+* Added French translations
+* Added date and time of when this plugin last did an update check on the settings screen
 
 = 1.3.2 =
 * Added $wp_version globals ( Explains why WordPress Core Updates notifications haven't been working )

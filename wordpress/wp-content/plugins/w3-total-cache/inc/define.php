@@ -5,21 +5,31 @@ if (!defined('ABSPATH')) {
 }
 
 define('W3TC', true);
-define('W3TC_VERSION', '0.9.2.11');
+define('W3TC_VERSION', '0.9.4');
 define('W3TC_POWERED_BY', 'W3 Total Cache/' . W3TC_VERSION);
 define('W3TC_EMAIL', 'w3tc@w3-edge.com');
 define('W3TC_TEXT_DOMAIN', 'w3-total-cache');
 define('W3TC_PAYPAL_URL', 'https://www.paypal.com/cgi-bin/webscr');
 define('W3TC_PAYPAL_BUSINESS', 'w3tc-team@w3-edge.com');
 define('W3TC_LINK_URL', 'http://www.w3-edge.com/wordpress-plugins/');
-define('W3TC_LINK_NAME', 'WordPress Plugins');
+define('W3TC_LINK_NAME', 'W3 EDGE, Optimization Products for WordPress');
 define('W3TC_FEED_URL', 'http://feeds.feedburner.com/W3TOTALCACHE');
-define('W3TC_NEWS_FEED_URL', 'http://feeds.w3-edge.com/W3EDGE');
+define('W3TC_NEWS_FEED_URL', 'http://feeds.feedburner.com/W3EDGE');
 define('W3TC_README_URL', 'http://plugins.svn.wordpress.org/w3-total-cache/trunk/readme.txt');
 define('W3TC_SUPPORT_US_TIMEOUT', 2592000);
-define('W3TC_SUPPORT_REQUEST_URL', 'http://www.w3-edge.com/?w3tc_support_request=1');
-define('NEWRELIC_SIGNUP_URL', 'https://rpm.newrelic.com/signup?product%5Blevel%5D=Standard&product%5Bcommitment%5D=Monthly&subscription%5Bnumber_of_hosts%5D=1&partnership_id=295');
-define('MAXCDN_SIGNUP_URL', 'http://bit.ly/pXZ4t1');
+define('W3TC_SUPPORT_REQUEST_URL', 'https://www.w3-edge.com/w3tc/support/');
+define('W3TC_TRACK_URL', 'https://www.w3-edge.com/w3tc/track/');
+define('W3TC_MAILLINGLIST_SIGNUP_URL', 'https://www.w3-edge.com/w3tc/emailsignup/');
+define('NEWRELIC_SIGNUP_URL', 'http://bit.ly/w3tc-partner-newrelic-signup');
+define('MAXCDN_SIGNUP_URL', 'http://bit.ly/w3tc-cdn-maxcdn-create-account');
+define('MAXCDN_AUTHORIZE_URL', 'http://bit.ly/w3tc-cdn-maxcdn-authorize');
+define('NETDNA_AUTHORIZE_URL', 'https://cp.netdna.com/i/w3tc');
+// this is the URL our updater / license checker pings. This should be the URL of the site with EDD installed
+if (!defined('EDD_W3EDGE_STORE_URL')) define('EDD_W3EDGE_STORE_URL', 'https://www.w3-edge.com/' );
+if (!defined('EDD_W3EDGE_STORE_URL_PLUGIN')) define('EDD_W3EDGE_STORE_URL_PLUGIN', 'https://www.w3-edge.com/?w3tc_buy_pro_plugin' );
+
+// the name of your product. This should match the download name in EDD exactly
+define('EDD_W3EDGE_W3TC_NAME', 'W3 Total Cache Pro: Annual Subscription');
 
 define('W3TC_WIN', (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN'));
 
@@ -29,6 +39,8 @@ define('W3TC_INC_DIR', W3TC_DIR . '/inc');
 define('W3TC_INC_WIDGET_DIR', W3TC_INC_DIR. '/widget');
 define('W3TC_INC_FUNCTIONS_DIR', W3TC_INC_DIR . '/functions');
 define('W3TC_INC_OPTIONS_DIR', W3TC_INC_DIR . '/options');
+define('W3TC_INC_LIGHTBOX_DIR', W3TC_INC_DIR . '/lightbox');
+define('W3TC_INC_POPUP_DIR', W3TC_INC_DIR . '/popup');
 define('W3TC_LIB_DIR', W3TC_DIR . '/lib');
 define('W3TC_LIB_W3_DIR', W3TC_LIB_DIR . '/W3');
 define('W3TC_LIB_MINIFY_DIR', W3TC_LIB_DIR . '/Minify');
@@ -70,7 +82,9 @@ define('W3TC_ADDIN_FILE_OBJECT_CACHE', WP_CONTENT_DIR . '/object-cache.php');
 
 
 define('W3TC_WP_LOADER', (defined('WP_PLUGIN_DIR') ? WP_PLUGIN_DIR : WP_CONTENT_DIR . '/plugins') . '/w3tc-wp-loader.php');
-
+if (!defined('W3TC_EXTENSION_DIR'))
+    define('W3TC_EXTENSION_DIR', (defined('WP_PLUGIN_DIR') ? WP_PLUGIN_DIR : WP_CONTENT_DIR . '/plugins'));
+define('W3TC_CORE_EXTENSION_DIR', W3TC_DIR . '/extensions');
 w3_require_once(W3TC_INC_DIR . '/functions/compat.php');
 w3_require_once(W3TC_INC_DIR . '/functions/plugin.php');
 
@@ -116,7 +130,9 @@ function w3_is_xml($content) {
  * @return bool
  */
 function w3_can_print_comment(&$buffer) {
-    return apply_filters('w3tc_can_print_comment', w3_is_xml($buffer) && !defined('DOING_AJAX'));
+    if (function_exists('apply_filters'))
+        return apply_filters('w3tc_can_print_comment', w3_is_xml($buffer) && !defined('DOING_AJAX'));
+    return w3_is_xml($buffer) && !defined('DOING_AJAX');
 }
 
 /*
@@ -124,25 +140,31 @@ function w3_can_print_comment(&$buffer) {
  *
  * @return string
  */
-function w3_filename_to_url($filename) {
+function w3_filename_to_url($filename, $use_site_url = false) {
     // using wp-content instead of document_root as known dir since dirbased
     // multisite wp adds blogname to the path inside site_url
     if (substr($filename, 0, strlen(WP_CONTENT_DIR)) != WP_CONTENT_DIR)
         return '';
     $uri_from_wp_content = substr($filename, strlen(WP_CONTENT_DIR));
 
-    $site_url_ssl = w3_get_url_ssl(w3_get_home_url());
+    if ($use_site_url)
+        $site_url_ssl = w3_get_url_ssl(w3_get_site_url());
+    else
+        $site_url_ssl = w3_get_url_ssl(w3_get_home_url());
 
     $dir = '';
-    if (substr(WP_CONTENT_DIR, 0, strlen(w3_get_site_root())) == w3_get_site_root()) {
-        $dir = str_replace($site_url_ssl, '', w3_get_url_ssl(w3_get_site_url()));
-        $dir = trim($dir, '/');
+    if (substr(trailingslashit(WP_CONTENT_DIR), 0, strlen(trailingslashit(w3_get_site_root()))) == trailingslashit(w3_get_site_root())) {
+        if ($use_site_url || w3_get_domain(w3_get_home_url()) == w3_get_domain(w3_get_site_url()))
+            $dir = str_replace($site_url_ssl, '', w3_get_url_ssl(w3_get_site_url()));
+        else
+            $dir = str_replace($site_url_ssl, '', w3_get_url_ssl(w3_get_home_url()));
+        $dir = trim($dir, '/\\');
         if ($dir)
             $dir = '/' . $dir;
-        $content_path = trim(substr(WP_CONTENT_DIR, strlen(w3_get_site_root())), '/');
+        $content_path = trim(substr(trailingslashit(WP_CONTENT_DIR), strlen(trailingslashit(w3_get_site_root()))), '/\\');
     }
     else
-        $content_path = trim(substr(WP_CONTENT_DIR, strlen(w3_get_document_root())), '/');
+        $content_path = trim(substr(trailingslashit(WP_CONTENT_DIR), strlen(trailingslashit(w3_get_document_root()))), '/\\');
 
     $url = $site_url_ssl . $dir . '/' . $content_path . $uri_from_wp_content;
 
@@ -248,9 +270,18 @@ function w3_is_database_error(&$content) {
  * @return boolean
  */
 function w3_is_preview_mode() {
-    return (isset($_REQUEST['w3tc_preview']) || 
-        (isset($_SERVER['HTTP_REFERER']) && 
+    return (isset($_COOKIE['w3tc_preview']) && $_COOKIE['w3tc_preview'] == true) || (isset($_REQUEST['w3tc_preview']) ||
+        (isset($_SERVER['HTTP_REFERER']) &&
             strstr($_SERVER['HTTP_REFERER'], 'w3tc_preview') !== false));
+}
+
+/**
+ * Returns a preview link with current state
+ * @return string
+ */
+function w3tc_get_preview_link() {
+    w3_require_once(W3TC_INC_FUNCTIONS_DIR . '/ui.php');
+    return w3_is_preview_mode() ? w3_button_link(__('Stop Previewing', 'w3-total-cache'), wp_nonce_url(w3_admin_url('admin.php?page=w3tc_dashboard&w3tc_default_stop_previewing'), 'w3tc'), false) : w3_button_link(__('Preview', 'w3-total-cache'), wp_nonce_url(w3_admin_url('admin.php?page=w3tc_dashboard&w3tc_default_previewing'), 'w3tc'), true);
 }
 
 /**
@@ -320,6 +351,9 @@ function w3_get_domain($host) {
     $host = strtolower($host);
 
     if (($pos = strpos($host, ':')) !== false) {
+        $host = substr($host, $pos+3);
+    }
+    if (($pos = strpos($host, '/')) !== false) {
         $host = substr($host, 0, $pos);
     }
 
@@ -626,7 +660,7 @@ function w3_get_home_url() {
     
     if ($home_url === null) {
         $config = w3_instance('W3_Config');
-        if ($config->get_boolean('common.force_master')) {
+        if (w3_is_multisite() && $config->get_boolean('common.force_master')) {
             $home_url = get_home_url();
         } else {
             // get_option is unusable here, it can cause problem when objCache isn't yet initialized
@@ -718,8 +752,6 @@ function w3_get_site_url_ssl() {
  */
 function w3_get_document_root() {
     static $document_root = null;
-    $len = strlen($_SERVER['PHP_SELF']);
-    $split = $len/2;
 
     if ($document_root === null) {
         if (!empty($_SERVER['SCRIPT_FILENAME']) && $_SERVER['SCRIPT_FILENAME'] == $_SERVER['PHP_SELF']) {
@@ -1001,6 +1033,15 @@ function w3_can_cdn_purge($engine) {
 }
 
 /**
+ * Returns true if CDN supports realtime purge. That is purging on post changes, comments etc.
+ * @param $engine
+ * @return bool
+ */
+function w3tc_cdn_supports_realtime_purge($engine) {
+    return !in_array($engine, array('cf2'));
+}
+
+/**
  * Parses path
  *
  * @param string $path
@@ -1221,6 +1262,8 @@ function w3_redirect_temp( $url = '', $params = array() ) {
  * Returns caching engine name
  *
  * @param $engine
+ * @param $module
+ *
  * @return string
  */
 function w3_get_engine_name($engine, $module = '') {
@@ -1513,7 +1556,6 @@ function w3_convert_secs_to_time($input, $string = true) {
     $minutes = $input % 60;
     $input = floor($input / 60);
     $hours = $input % 60;
-    $input = floor($input / 60);
     if ($hours)
         $time[] = sprintf(__('%dh', 'w3-total-cache'), $hours);
     if ($minutes)
@@ -1531,20 +1573,54 @@ function w3_convert_secs_to_time($input, $string = true) {
 }
 
 /**
+ * @var W3_Config $config
  * @return string
  */
-function w3_w3tc_release_version() {
-    if (defined('W3TC_ENTERPRISE') && W3TC_ENTERPRISE)
+function w3_w3tc_release_version($config = null) {
+    if (w3_is_enterprise($config))
         return 'enterprise';
-    if (defined('W3TC_PRO') && W3TC_PRO)
+    if (w3_is_pro($config) &&  w3tc_is_pro_dev_mode())
+        return 'pro development';
+    if (w3_is_pro($config))
         return 'pro';
     return 'community';
 }
 
-function w3_is_pro() {
-    return defined('W3TC_PRO') && W3TC_PRO;
+/**
+ * @param W3_Config $config
+ * @return bool
+ */
+function w3_is_pro($config = null) {
+    $result = false;
+    if ($config)
+        $result = $config->get_string('plugin.type') == 'pro' ||
+            ($config->get_string('plugin.type') == 'pro_dev' );
+    return $result || (defined('W3TC_PRO') && W3TC_PRO);
 }
 
-function w3_is_enterprise() {
-    return defined('W3TC_ENTERPRISE') && W3TC_ENTERPRISE;
+/**
+ * Enable Pro Dev mode support
+ * @return bool
+ */
+function w3tc_is_pro_dev_mode() {
+    return defined('W3TC_PRO_DEV_MODE') && W3TC_PRO_DEV_MODE;
+}
+
+/**
+ * @param W3_Config $config
+ * @return bool
+ */
+function w3_is_enterprise($config = null) {
+    $result = false;
+    if ($config)
+        $result = $config->get_string('plugin.type') == 'enterprise';
+    return $result || (defined('W3TC_ENTERPRISE') && W3TC_ENTERPRISE);
+}
+
+/**
+ * Checks if site is using edge mode.
+ * @return bool
+ */
+function w3tc_edge_mode() {
+    return defined('W3TC_EDGE_MODE') && W3TC_EDGE_MODE;
 }

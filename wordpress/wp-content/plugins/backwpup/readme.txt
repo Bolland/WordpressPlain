@@ -1,19 +1,19 @@
-=== BackWPup ===
+=== BackWPup Free - WordPress Backup Plugin ===
 Contributors: inpsyde, danielhuesken, Bueltge, nullbyte
-Tags: backup, dump, database, file, ftp, xml, time, upload, multisite, cloud, dropbox, storage, S3
-Requires at least: 3.2
-Tested up to: 3.5.1
-Stable tag: 3.0.11
+Tags: Amazon, Amazon S3, back up, backup, chinese, cloud, cloud files, database, db backup, dropbox, dump, file, french, ftp, ftps, german, migrate, multisite, russian, schedule, sftp, storage, S3, time, upload, xml
+Requires at least: 3.4
+Tested up to: 3.9
+Stable tag: 3.1.2
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
-Flexible, scheduled WordPress backups to any location
+Schedule complete automatic backups of your WordPress installation. Decide which content will be stored (Dropbox, S3…). This is the free version
 
 == Description ==
 
-The backup files can be used to save your whole installation including `/wp-content/`
-and push them to an external Backup Service, if you don’t want to save the backups on
-the same server. With the single backup .zip file you are able to restore an installation.
+The **backup plugin** **[BackWPup Free](http://marketpress.com/product/backwpup-pro/)** can be used to save your complete installation including /wp-content/ and push them to an external Backup Service, like **Dropbox**, **S3**, **FTP** and many more, see list below. With a single backup .zip file you are able to easily restore an installation. Please understand: this free version will not be supported as good as the [BackWPup Pro version](http://marketpress.com/product/backwpup-pro/).
+
+BackWPup Free is the number 1 backup-plugin for WordPress with nearly 1.000.000 downloads and in the top 20 of all WordPress Plugins (checked on rankwp.com)
 
 * Database Backup  *(needs mysqli)*
 * WordPress XML Export
@@ -24,40 +24,49 @@ the same server. With the single backup .zip file you are able to restore an ins
 * Backups in zip, tar, tar.gz, tar.bz2 format *(needs gz, bz2, ZipArchive)*
 * Store backup to directory
 * Store backup to FTP server *(needs ftp)*
+* Store backup to Dropbox *(needs curl)*
 * Store backup to S3 services *(needs curl)*
 * Store backup to Microsoft Azure (Blob) *(needs PHP 5.3.2, curl)*
 * Store backup to RackSpaceCloud *(needs PHP 5.3.2, curl)*
-* Store backup to Dropbox *(needs curl)*
 * Store backup to SugarSync *(needs curl)*
+* PRO: Store backup to Amazon Glacier *(needs PHP 5.3.3, curl)*
+* PRO: Store backup to Google Drive *(needs PHP 5.3.3, curl)*
 * Send logs and backups by email
 * Multi-site support only as network admin
+* Pro version and support available - [BackWPup Pro](http://marketpress.com/product/backwpup-pro/)
 
-Get the Pro Version: http://marketpress.com/product/backwpup-pro/
+= Available languages =
+* english (standard)
+* french / français (fr_FR)
+* german / deutsch (de_DE)
+* russian / pоссия (ru_RU)
+* simplified chinese (zh_CN)
 
-**WordPress 3.2 and PHP 5.2.6 required!**
+= Requirements =
+* WordPress 3.4 and PHP 5.2.6 required!
+* To use the Plugin with full functionality PHP 5.3.3 with mysqli, FTP,gz, bz2,  ZipArchive and curl is needed.
+* Plugin functions that don't work because of your server settings, will not be displayed in admin area.
 
-**To use the Plugin with full functionality PHP 5.3.3 with mysqli, FTP,gz, bz2,  ZipArchive and curl is needed.**
+**Remember: The most expensive backup is the one you never did! And please test your backups!**
 
-**Plugin functions that don't work will be not displayed.**
-
-**Test your Backups!**
+Get the [BackWPup Pro](http://marketpress.com/product/backwpup-pro/) Version with more features on [MarketPress.com](http://marketpress.com/product/backwpup-pro/)
 
 **Made by [Inpsyde](http://inpsyde.com) &middot; We love WordPress**
 
-Have a look at the premium plugins in our [market](http://marketpress.com).
+Have a look at our other premium plugins at [MarketPress.com](http://marketpress.com).
 
 == Frequently Asked Questions ==
 
 = My backup jobs don’t seem to run as scheduled. =
-  
-BackWPup uses WordPress’ own cron job system (**WP Cron**) to execute scheduled backup jobs. In order for WordPress to “know” when to execute a job, its “inner clock” needs to be set regularly. That happens whenever someone (including yourself) visits your site. 
+
+BackWPup uses WordPress’ own cron job system (**WP Cron**) to execute scheduled backup jobs. In order for WordPress to “know” when to execute a job, its “inner clock” needs to be set regularly. That happens whenever someone (including yourself) visits your site.
 If your site happens to not being visited for a period of time, WordPress’ inner clock gets sort of slow. In that case it takes an extra server-side cron job to regularly call http://your-site.tld/wp-cron.php and tell WordPress what time it is.
-  
+
 A simple way to find out whether WP Cron works as it should on your site is to create a new post and set its publishing date to some point in the future, i.e. 10 minutes from now. Then leave your site (that’s important), come back after 11 minutes and check whether your scheduled post has been published. If not, you’re very likely to have an issue with WP Cron.
 
 = Yuk! It says: “ERROR: No destination correctly defined for backup!” =
 
-That means a backup job has started, but BackWPup doens’t know where to store the backup files. Please cancel the running job and re-edit its configuration. There should be a Tab “To: …” in your backup job’s configuration. Have you set a backup target correctly? 
+That means a backup job has started, but BackWPup doens’t know where to store the backup files. Please cancel the running job and re-edit its configuration. There should be a Tab “To: …” in your backup job’s configuration. Have you set a backup target correctly?
 
 = A backup job has started, but nothing seems to be happening—not even when I re-start it manually. =
 
@@ -81,26 +90,15 @@ Not really a solution, but a way to identify the real problem: see remarks on WP
 = I get this error message: `The HTTP response test get a error "Connection time-out"` =
 
 BackWPup performs a simple HTTP request to the server itself every time you click `run now` or whenever a backup job starts automatically. The HTTP response test message could mean:
-
 * Your host does not allow *loop back connections*. (If you know what `WP_ALTERNATE_CRON` is, try it.)
 * Your WordPress root directory or backup directory requires authetification. Set username and password in Settings->Network.
 * The Server can’t resolve its own hostname.
-* A plugin or theme is blocking the request. 
+* A plugin or theme is blocking the request.
 * Other issues related to your individual server and/or WordPress configuration.
 
 
 = I get a fatal error: `Can not create folder: […]/wp-content/backwpup-[…]-logs in […]/wp-content/plugins/backwpup/inc/class-job.php …` =
 Please set CHMOD 775 on the /wp-content/ directory and refresh the BackWPup dashboard. If that doesn’t help, try CHMOD 777. You can revert it to 755 once BackWPup has created its folder.
-
-
-= I don’t see an option to configure Dropbox, S3 or other destinations. =
-If you don’t see those options in the Add new job->General tab, it is most likely your server running a PHP version below 5.3.
-
-
-= Backup jobs are running forever! =
-Almost all web hosts have limited allowed script execution time on their servers. As a consequence, BackWPup might be “interrupted” in its job execution when executing the job takes longer than script execution is allowed for by the server (i.e. when the job requires to add a lot of files to a ZIP archive). Whenever BackWPup’s execution is stopped by the server, it waits 5 minutes before it tries to restart the job. If it is stopped again, it waits another five minutes. Those interruptions can then add up to what looks like 20-40 minutes of execution while really most of it is waiting time for a job to be restarted.
-
-A remedy in this case can be splitting a large file backup into smaller chunks. For example, create one backup job for your WordPress installation, but exclude /wp-content/. Create another job for /wp-content/. If your site has a lot of uploaded photos, maybe even go further, exclude /uploads/ from your /wp-content/ backup and create a third job for /uploads/.
 
 
 = How do I restore a backup? =
@@ -116,17 +114,13 @@ Try opening the text file in an editor software like Notepad++ (Windows) or Text
 = My web host notified me BackWPup was causing an inacceptable server load! =
 Go to Settings->Jobs and try a different option for “Reduce server load”.
 
-
 = Can I cancel a running backup job via FTP? =
-
-Yes. Go to your BackWPup temp directory and find a file named `backwpup-xyz-working.php` where “xyz” is a random string of numbers and characters. Delete that file to cancel the currently running backup job.
-
+Yes. Go to your BackWPup temp directory and find a file named `backwpup-xyz-working.json` where “xyz” is a random string of numbers and characters. Delete that file to cancel the currently running backup job.
 
 = Can I move the temp directory to a different location? =
+Yes. You need to have writing access to the wp-config.php file (usually residing in the root directory of your WordPress installation).
 
-Yes. You need to have writing access to the wp-config.php file (usually residing in the root directory of your WordPress installation). 
-
-* Open wp-config.php and find the line where it says `if ( !defined('ABSPATH') )`. 
+* Open wp-config.php and find the line where it says `if ( !defined('ABSPATH') )`.
 * Somewhere *before* that line add this: `define( 'WP_TEMP_DIR', '/absolute/path/to/wp/your/temp-dir' );`
 * Replace `/absolute/path/to/wp/` with the absolute path of your WordPress installation and `your/temp-dir` with the path to your new temp directory.
 * Save the file.
@@ -149,8 +143,6 @@ Yes. You need to have writing access to the wp-config.php file (usually residing
 * %H = Hour in 24-hour format, with leading zeros
 * %i = Two digit representation of the minute
 * %s = Two digit representation of the second
-* %u = Two digit representation of the microsecond
-* %U = [UNIX timestamp](http://www.php.net/manual/en/function.time.php) (seconds since January 1 1970 00:00:00 GMT)
 
 == Screenshots ==
 
@@ -179,6 +171,69 @@ Please check all settings after the update:
 
 
 == Changelog ==
+= Version 3.1.2 =
+* Added: .donotbackup file. Folders and sub folders containing this file in will not be included in backups.
+* Fixed: New multisite installs did not save jobs.
+* Fixed: New multisite installs did not save installed version.
+* Fixed: Fatal error when attempting to clean up inactive jobs from cron
+* Fixed: Exclude uploads not working
+* Fixed: Message "file not readable" of an excluded folder
+* Fixed: WP-CLI deprecated and unknown parameter message
+* Fixed: Bugs in pagination on logs and backups page
+* Removed: Banner from plugins page
+* Improved: Memory usage during XML export
+* Improved: Mime type detection
+* Improved: Dropbox SSL handling
+* Improved: Certificate bundle file can now be filtered
+* Improved: Auto-loading vendor classes
+* Improved: Performance when saving other database tables than MyISAM
+* Updated: AWS SDK to Version 2.5.2 (PHP 5.3.3+)
+* Updated: RSC SDK to Version 1.9.1
+* Updated: Guzzle SDK to Version 3.8.1
+* Added: S3 Service: Amazon China (Beijing) region
+* Added: Rackspace: Hong Kong (HKG) region
+* PRO: Fixed: Duplicating synced files on S3
+* PRO: Update: Google SDK to 0.6.7
+* PRO: Added: Amazon Glacier China (Beijing) region
+
+= Version 3.1.1 =
+* Fixed: Plugins will not backup
+* Improved: Dropped quota check for Dropbox. Will cancel upload only when Dropbox API sends error 507.
+* Improved: Remove special chars from file names in archives
+* Improved: Handling off restarts on archive creation
+
+= Version 3.1 =
+* Fixed: Message about aborted step did not display correctly
+* Fixed: Incorrect rescheduling of jobs
+* Improved: Overall performance while generating backup archives
+* Improved: Uploads of backup archives to FTP/S3/Dropbox/Azure/GDrive can be continued
+* Improved: Script re-starts based upon time while generating archives and uploading
+* Improved: Reduced risk of running scripts being stopped via external processes in fcgi mode
+* Improved: Backup destinations and their dependencies only being loaded when needed
+* Improved: Required dependencies for destinations being displayed now
+* Improved: Displaying of error messages as error messages (red, not yellow)
+* Improved: Reduced size of vendor/SDK directory by 50%
+* Improved: Regex for BackWPup archive file detection
+* Improved: Symlink handling for file backup on WordPress folders
+* Improved: Use icon font for menu, adminbar and on other places
+* Improved: Responsive for WordPress 3.8
+* Updated: AWS SDK to Version 2.4.11 (PHP 5.3.3+)
+* Updated: RSC SDK to Version 1.7.3
+* Updated: SwiftMailer to Version 5.0.1
+* Removed: DB Optimization, because locking of tables that can make the site not accessible
+* PRO: Wizards using a separate session handling now
+* PRO: Hash that BackWPup uses is changeable
+* PRO: Added Google Drive Support
+* PRO: Added Amazon Glacier Support
+
+= Version 3.0.13 =
+* Improved: Redirect when accessing the WordPress backend
+* Added: Debug Informations to Logfile
+* Added Sydney region for rackspace cloud
+* Added London region for rackspace cloud
+* Fixed: Cross-site scripting issue. Thanks to High-Tech Bridge for helping us: https://www.htbridge.com/advisory/HTB23161
+* Fixed: Fatal error when uninstalling on WordPress 3.4.2 and older
+
 = Version 3.0.12 =
 * Fixed: Redirect when accessing the WordPress backend
 * Added: Russian translation

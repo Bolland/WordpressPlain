@@ -13,17 +13,17 @@ $compilation_levels = array(
 $compilation_level = $this->_config->get_string('minify.ccjs.options.compilation_level');
 ?>
 <tr>
-    <th><label for="minify_ccjs_path_java"><?php _e('Path to JAVA executable:', 'w3-total-cache'); ?></label></th>
+    <th><label for="minify_ccjs_path_java"><?php w3_e_config_label('minify.ccjs.path.java') ?></label></th>
     <td>
         <input id="minify_ccjs_path_java" class="js_enabled" type="text" 
-           <?php $this->sealing_disabled('minify') ?> name="minify.ccjs.path.java" value="<?php echo htmlspecialchars($this->_config->get_string('minify.ccjs.path.java')); ?>" size="60" />
+           <?php $this->sealing_disabled('minify') ?> name="minify.ccjs.path.java" value="<?php echo esc_attr($this->_config->get_string('minify.ccjs.path.java')); ?>" size="60" />
     </td>
 </tr>
 <tr>
-    <th><label for="minify_ccjs_path_jar"><?php _e('Path to JAR file:', 'w3-total-cache'); ?></label></th>
+    <th><label for="minify_ccjs_path_jar"><?php w3_e_config_label('minify.ccjs.path.jar') ?></label></th>
     <td>
         <input id="minify_ccjs_path_jar" class="js_enabled" type="text" 
-            <?php $this->sealing_disabled('minify') ?> name="minify.ccjs.path.jar" value="<?php echo htmlspecialchars($this->_config->get_string('minify.ccjs.path.jar')); ?>" size="60" />
+            <?php $this->sealing_disabled('minify') ?> name="minify.ccjs.path.jar" value="<?php echo esc_attr($this->_config->get_string('minify.ccjs.path.jar')); ?>" size="60" />
     </td>
 </tr>
 <tr>
@@ -34,12 +34,12 @@ $compilation_level = $this->_config->get_string('minify.ccjs.options.compilation
     </td>
 </tr>
 <tr>
-    <th><label for="minify_ccjs_options_compilation_level"><?php _e('Compilation level:', 'w3-total-cache'); ?></label></th>
+    <th><label for="minify_ccjs_options_compilation_level"><?php w3_e_config_label('minify.ccjs.options.compilation_level') ?></label></th>
     <td>
         <select id="minify_ccjs_options_compilation_level" class="js_enabled" name="minify.ccjs.options.compilation_level" 
             <?php $this->sealing_disabled('minify') ?>>
             <?php foreach ($compilation_levels as $compilation_level_key => $compilation_level_name): ?>
-            <option value="<?php echo $compilation_level_key; ?>"<?php selected($compilation_level, $compilation_level_key); ?>><?php echo $compilation_level_name; ?></option>
+            <option value="<?php echo esc_attr($compilation_level_key); ?>" <?php selected($compilation_level, $compilation_level_key); ?>><?php echo $compilation_level_name; ?></option>
             <?php endforeach; ?>
         </select>
     </td>

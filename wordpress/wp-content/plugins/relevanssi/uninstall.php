@@ -6,7 +6,8 @@ if (!defined('WP_UNINSTALL_PLUGIN'))
 global $wpdb;
 require_once('lib/uninstall.php');
 
-relevanssi_uninstall();
+if (!defined('RELEVANSSI_PREMIUM')) relevanssi_uninstall();
+// if Relevanssi Premium is installed, options will not be deleted
 
 function relevanssi_uninstall() {
 	delete_option('relevanssi_title_boost');
@@ -24,6 +25,7 @@ function relevanssi_uninstall() {
 	delete_option('relevanssi_excerpt_allowable_tags');
 	delete_option('relevanssi_log_queries');
 	delete_option('relevanssi_excat');
+	delete_option('relevanssi_extag');
 	delete_option('relevanssi_cat');
 	delete_option('relevanssi_index_fields');
 	delete_option('relevanssi_exclude_posts'); 	//added by OdditY
@@ -45,8 +47,6 @@ function relevanssi_uninstall() {
 	delete_option('relevanssi_index_limit');
 	delete_option('relevanssi_disable_or_fallback');
 	delete_option('relevanssi_respect_exclude');
-	delete_option('relevanssi_cache_seconds');
-	delete_option('relevanssi_enable_cache');
 	delete_option('relevanssi_min_word_length');
 	delete_option('relevanssi_options');
 	delete_option('relevanssi_wpml_only_current');
@@ -69,6 +69,8 @@ function relevanssi_uninstall() {
 	delete_option('relevanssi_include_tags'); 	//added by OdditY	
 	delete_option('relevanssi_custom_taxonomies');
 	delete_option('relevanssi_include_cats');
+	delete_option('relevanssi_cache_seconds');
+	delete_option('relevanssi_enable_cache');
 
 	relevanssi_clear_database_tables();
 }

@@ -11,3 +11,4 @@ wordpress/wp-content/cache/
 wordpress/wp-content/backups/
 sitemap.xml.gz
 wp-config.php
+wordpress/wp-content/themes

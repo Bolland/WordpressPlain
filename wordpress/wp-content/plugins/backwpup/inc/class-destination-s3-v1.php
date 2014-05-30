@@ -2,8 +2,6 @@
 // Amazon S3 SDK v1.6.2
 // http://aws.amazon.com/de/sdkforphp/
 // https://github.com/amazonwebservices/aws-sdk-for-php
-if ( ! class_exists( 'AmazonS3' ) )
-	include dirname( __FILE__ ) . '/../sdk/Aws_v1/sdk.class.php';
 if ( ! defined( 'E_USER_DEPRECATED') )
 	define( 'E_USER_DEPRECATED', 16384 );
 
@@ -11,21 +9,6 @@ if ( ! defined( 'E_USER_DEPRECATED') )
  * Documentation: http://docs.amazonwebservices.com/aws-sdk-php-2/latest/class-Aws.S3.S3Client.html
  */
 class BackWPup_Destination_S3_V1 extends BackWPup_Destinations {
-
-	/**
-	 *
-	 */
-	public function __construct() {
-
-		$this->info[ 'ID' ]        	 = 'S3';
-		$this->info[ 'name' ]        = __( 'S3 Service', 'backwpup' );
-		$this->info[ 'description' ] = __( 'Backup to an S3 Service', 'backwpup' );
-		$this->info[ 'URI' ]         = translate( BackWPup::get_plugin_data( 'PluginURI' ), 'backwpup' );
-		$this->info[ 'author' ]      = BackWPup::get_plugin_data( 'Author' );
-		$this->info[ 'authorURI' ]   = translate( BackWPup::get_plugin_data( 'AuthorURI' ), 'backwpup' );
-		$this->info[ 'version' ]     = BackWPup::get_plugin_data( 'Version' );
-
-	}
 
 	/**
 	 * @param        $s3region
@@ -54,6 +37,8 @@ class BackWPup_Destination_S3_V1 extends BackWPup_Destinations {
 				return 'https://s3-ap-southeast-2.amazonaws.com';
 			case 'sa-east-1':
 				return 'https://s3-sa-east-1.amazonaws.com';
+			case 'cn-north-1':
+				return 'https://cn-north-1.amazonaws.com';
 			case 'google-storage':
 				return 'https://storage.googleapis.com';
 			case 'hosteurope':
@@ -85,7 +70,7 @@ class BackWPup_Destination_S3_V1 extends BackWPup_Destinations {
 		<p></p>
 		<table class="form-table">
 			<tr>
-				<th scope="row"><label for="s3region"><?php _e( 'Select an S3 service', 'backwpup' ) ?></label></th>
+				<th scope="row"><label for="s3region"><?php _e( 'Select a S3 service', 'backwpup' ) ?></label></th>
 				<td>
 					<select name="s3region" id="s3region" title="<?php _e( 'Amazon S3 Region', 'backwpup' ); ?>">
 						<option value="us-east-1" <?php selected( 'us-east-1', BackWPup_Option::get( $jobid, 's3region' ), TRUE ) ?>><?php _e( 'Amazon S3: US Standard', 'backwpup' ); ?></option>
@@ -96,6 +81,7 @@ class BackWPup_Destination_S3_V1 extends BackWPup_Destinations {
 						<option value="ap-southeast-1" <?php selected( 'ap-southeast-1', BackWPup_Option::get( $jobid, 's3region' ), TRUE ) ?>><?php _e( 'Amazon S3: Asia Pacific (Singapore)', 'backwpup' ); ?></option>
 						<option value="ap-southeast-2" <?php selected( 'ap-southeast-2', BackWPup_Option::get( $jobid, 's3region' ), TRUE ) ?>><?php _e( 'Amazon S3: Asia Pacific (Sydney)', 'backwpup' ); ?></option>
 						<option value="sa-east-1" <?php selected( 'sa-east-1', BackWPup_Option::get( $jobid, 's3region' ), TRUE ) ?>><?php _e( 'Amazon S3: South America (Sao Paulo)', 'backwpup' ); ?></option>
+						<option value="cn-north-1" <?php selected( 'cn-north-1', BackWPup_Option::get( $jobid, 's3region' ), TRUE ) ?>><?php _e( 'Amazon S3: China (Beijing)', 'backwpup' ); ?></option>
 						<option value="google-storage" <?php selected( 'google-storage', BackWPup_Option::get( $jobid, 's3region' ), TRUE ) ?>><?php _e( 'Google Storage (Interoperable Access)', 'backwpup' ); ?></option>
 						<option value="hosteurope" <?php selected( 'hosteurope', BackWPup_Option::get( $jobid, 's3region' ), TRUE ) ?>><?php _e( 'Hosteurope Cloud Storage', 'backwpup' ); ?></option>
                         <option value="dreamhost" <?php selected( 'dreamhost', BackWPup_Option::get( $jobid, 's3region' ), TRUE ) ?>><?php _e( 'Dream Host Cloud Storage', 'backwpup' ); ?></option>
@@ -103,7 +89,7 @@ class BackWPup_Destination_S3_V1 extends BackWPup_Destinations {
 				</td>
 			</tr>
 			<tr>
-				<th scope="row"><label for="s3base_url"><?php _e( 'Or an S3 Server URL', 'backwpup' ) ?></label></th>
+				<th scope="row"><label for="s3base_url"><?php _e( 'Or a S3 Server URL', 'backwpup' ) ?></label></th>
 				<td>
 					<input id="s3base_url" name="s3base_url" type="text"  value="<?php echo esc_attr( BackWPup_Option::get( $jobid, 's3base_url' ) );?>" class="regular-text" autocomplete="off" />
 				</td>
@@ -168,8 +154,8 @@ class BackWPup_Destination_S3_V1 extends BackWPup_Destinations {
 					<?php
 					if ( BackWPup_Option::get( $jobid, 'backuptype' ) == 'archive' ) {
 						?>
-						<label for="ids3maxbackups"><input id="ids3maxbackups" name="s3maxbackups" type="text" size="3" value="<?php echo esc_attr( BackWPup_Option::get( $jobid, 's3maxbackups' ) ); ?>" class="small-text" />&nbsp;
-						<?php  _e( 'Number of files to keep in folder.', 'backwpup' ); BackWPup_Help::tip( __( 'Oldest files will be deleted first. 0 = no deletion', 'backwpup' ) ); ?></label>
+						<label for="ids3maxbackups"><input id="ids3maxbackups" name="s3maxbackups" type="text" size="3" value="<?php echo esc_attr( BackWPup_Option::get( $jobid, 's3maxbackups' ) ); ?>" class="small-text help-tip" title="<?php esc_attr_e( 'Oldest files will be deleted first. 0 = no deletion', 'backwpup' ); ?>" />&nbsp;
+						<?php  _e( 'Number of files to keep in folder.', 'backwpup' ); ?></label>
 						<?php } else { ?>
                         <label for="ids3syncnodelete"><input class="checkbox" value="1"
 							   type="checkbox" <?php checked( BackWPup_Option::get( $jobid, 's3syncnodelete' ), TRUE ); ?>
@@ -210,7 +196,7 @@ class BackWPup_Destination_S3_V1 extends BackWPup_Destinations {
 	 * @return string
 	 */
 	public function edit_form_post_save( $jobid ) {
-		$message = '';
+
 		BackWPup_Option::update( $jobid, 's3accesskey', isset( $_POST[ 's3accesskey' ] ) ? $_POST[ 's3accesskey' ] : '' );
 		BackWPup_Option::update( $jobid, 's3secretkey', isset( $_POST[ 's3secretkey' ] ) ? BackWPup_Encryption::encrypt( $_POST[ 's3secretkey' ] ) : '' );
 		BackWPup_Option::update( $jobid, 's3base_url', isset( $_POST[ 's3base_url' ] ) ? esc_url_raw( $_POST[ 's3base_url' ] ) : '' );
@@ -241,13 +227,13 @@ class BackWPup_Destination_S3_V1 extends BackWPup_Destinations {
 					$s3->set_region( str_replace( array( 'http://', 'https://' ), '', $base_url ) );
 				} else {
 					$s3->set_hostname( str_replace( array( 'http://', 'https://' ), '', $base_url ) );
-					$s3->allow_hostname_override( FALSE );	
+					$s3->allow_hostname_override( FALSE );
 					if ( substr( $base_url, -1 ) == '/')
 						$s3->enable_path_style( TRUE );
 				}
 				if ( stristr( $base_url, 'http://' ) )
 					$s3->disable_ssl();
-				
+
 				// set bucket creation region
 				if ( $_POST[ 's3region' ] == 'google-storage' || $_POST[ 's3region' ] == 'hosteurope' )
 					$region = 'EU';
@@ -257,18 +243,16 @@ class BackWPup_Destination_S3_V1 extends BackWPup_Destinations {
 				$bucket = $s3->create_bucket(  $_POST[ 's3newbucket' ], $region, 'private' );
 
 				if ( $bucket->status == 200 )
-					$message .= sprintf( __( 'Bucket %1$s created in %2$s.','backwpup'), $_POST[ 's3newbucket' ], $bucket[ 'Location' ] ) . '<br />';
+					BackWPup_Admin::message( sprintf( __( 'Bucket %1$s created in %2$s.','backwpup'), $_POST[ 's3newbucket' ], $bucket[ 'Location' ] ) );
 				else
-					$message .= sprintf( __( 'Bucket %s could not be created.','backwpup'), $_POST[ 's3newbucket' ] ) . '<br />';
+					BackWPup_Admin::message( sprintf( __( 'Bucket %s could not be created.','backwpup'), $_POST[ 's3newbucket' ] ), TRUE );
 
 			}
 			catch ( Exception $e ) {
-				$message .= $e->getMessage();
+				BackWPup_Admin::message( $e->getMessage(), TRUE );
 			}
 			BackWPup_Option::update( $jobid, 's3bucket', $_POST[ 's3newbucket' ] );
 		}
-
-		return $message;
 	}
 
 	/**
@@ -290,7 +274,7 @@ class BackWPup_Destination_S3_V1 extends BackWPup_Destinations {
 					$s3->set_region( str_replace( array( 'http://', 'https://' ), '', $base_url ) );
 				} else {
 					$s3->set_hostname( str_replace( array( 'http://', 'https://' ), '', $base_url ) );
-					$s3->allow_hostname_override( FALSE );	
+					$s3->allow_hostname_override( FALSE );
 					if ( substr( $base_url, -1 ) == '/')
 						$s3->enable_path_style( TRUE );
 				}
@@ -306,7 +290,7 @@ class BackWPup_Destination_S3_V1 extends BackWPup_Destinations {
 				unset( $s3 );
 			}
 			catch ( Exception $e ) {
-				BackWPup_Admin::message( sprintf( __('S3 Service API: %s','backwpup'), $e->getMessage() ) );
+				BackWPup_Admin::message( sprintf( __('S3 Service API: %s','backwpup'), $e->getMessage() ), TRUE );
 			}
 		}
 
@@ -328,7 +312,7 @@ class BackWPup_Destination_S3_V1 extends BackWPup_Destinations {
 				$s3->set_region( str_replace( array( 'http://', 'https://' ), '', $base_url ) );
 			} else {
 				$s3->set_hostname( str_replace( array( 'http://', 'https://' ), '', $base_url ) );
-				$s3->allow_hostname_override( FALSE );	
+				$s3->allow_hostname_override( FALSE );
 				if ( substr( $base_url, -1 ) == '/')
 					$s3->enable_path_style( TRUE );
 			}
@@ -344,7 +328,7 @@ class BackWPup_Destination_S3_V1 extends BackWPup_Destinations {
 		if ( $s3file->status==200 ) {
 			header( "Pragma: public" );
 			header( "Expires: 0" );
-			header( "Cache-Control: must-revalidate, post-check=0, pre-check=0" );;
+			header( "Cache-Control: must-revalidate, post-check=0, pre-check=0" );
 			header( "Content-Type: application/octet-stream" );
 			header( "Content-Disposition: attachment; filename=" . basename( $get_file ) . ";" );
 			header( "Content-Transfer-Encoding: binary" );
@@ -368,13 +352,13 @@ class BackWPup_Destination_S3_V1 extends BackWPup_Destinations {
 	 * @param $job_object
 	 * @return bool
 	 */
-	public function job_run_archive( $job_object ) {
+	public function job_run_archive( &$job_object ) {
 
 		$job_object->substeps_todo = 2 + $job_object->backup_filesize;
 		$job_object->log( sprintf( __( '%d. Trying to send backup file to S3 Service&#160;&hellip;', 'backwpup' ), $job_object->steps_data[ $job_object->step_working ][ 'STEP_TRY' ] ), E_USER_NOTICE );
-		
+
 		try {
-			
+
 			$s3 = new AmazonS3( array( 	'key' => $job_object->job[ 's3accesskey' ],
 										'secret' => BackWPup_Encryption::decrypt( $job_object->job[ 's3secretkey' ] ),
 										'certificate_authority'	=> TRUE ) );
@@ -383,13 +367,13 @@ class BackWPup_Destination_S3_V1 extends BackWPup_Destinations {
 				$s3->set_region( str_replace( array( 'http://', 'https://' ), '', $base_url ) );
 			} else {
 				$s3->set_hostname( str_replace( array( 'http://', 'https://' ), '', $base_url ) );
-				$s3->allow_hostname_override( FALSE );	
+				$s3->allow_hostname_override( FALSE );
 				if ( substr( $base_url, -1 ) == '/')
 					$s3->enable_path_style( TRUE );
 			}
 			if ( stristr( $base_url, 'http://' ) )
 				$s3->disable_ssl();
-			
+
 
 			if ( $s3->if_bucket_exists( $job_object->job[ 's3bucket' ] ) ) {
 				$job_object->log( sprintf( __( 'Connected to S3 Bucket "%1$s" in %2$s', 'backwpup' ), $job_object->job[ 's3bucket' ], $base_url ), E_USER_NOTICE );
@@ -402,19 +386,19 @@ class BackWPup_Destination_S3_V1 extends BackWPup_Destinations {
 
 			//transfer file to S3
 			$job_object->log( __( 'Starting upload to S3 Service&#160;&hellip;', 'backwpup' ), E_USER_NOTICE );
-			
+
 			//Transfer Backup to S3
-		    if ( $job_object->job[ 's3storageclass' ] == 'REDUCED_REDUNDANCY' ) //set reduced redundancy or not			
+		    if ( $job_object->job[ 's3storageclass' ] == 'REDUCED_REDUNDANCY' ) //set reduced redundancy or not
 				$storage=AmazonS3::STORAGE_REDUCED;
 		    else
 				$storage=AmazonS3::STORAGE_STANDARD;
-		    
+
 			if ( empty( $job_object->job[ 's3ssencrypt' ] ) )
 				$job_object->job[ 's3ssencrypt' ] = NULL;
-			
+
 		    //set progress bar
 			$s3->register_streaming_read_callback( array( $job_object, 'curl_read_callback' ) );
-						
+
 			$result = $s3->create_object( $job_object->job[ 's3bucket' ], $job_object->job[ 's3dir' ] . $job_object->backup_file, array( 'fileUpload' => $job_object->backup_folder . $job_object->backup_file, 'acl' => AmazonS3::ACL_PRIVATE, 'storage' => $storage, 'encryption' => $job_object->job[ 's3ssencrypt' ] ) );
 
 			if ( $result->status >= 200 and $result->status < 300 ) {
@@ -436,10 +420,10 @@ class BackWPup_Destination_S3_V1 extends BackWPup_Destinations {
 		try {
 			$backupfilelist = array();
 			$filecounter    = 0;
-			$files          = array();				
+			$files          = array();
 			$objects = $s3->list_objects( $job_object->job[ 's3bucket' ], array( 'prefix' => $job_object->job[ 's3dir' ] ) );
 			if ( is_object( $objects ) ) {
-				foreach ( $objects->body->Contents as $object ) {			
+				foreach ( $objects->body->Contents as $object ) {
 					$file       = basename( (string) $object->Key );
 					$changetime = strtotime( (string) $object->LastModified ) + ( get_option( 'gmt_offset' ) * 3600 );
 					if ( $job_object->is_backup_archive( $file ) )
@@ -569,13 +553,13 @@ class BackWPup_Destination_S3_V1 extends BackWPup_Destinations {
 					$s3->set_region( str_replace( array( 'http://', 'https://' ), '', $base_url ) );
 				} else {
 					$s3->set_hostname( str_replace( array( 'http://', 'https://' ), '', $base_url ) );
-					$s3->allow_hostname_override( FALSE );	
+					$s3->allow_hostname_override( FALSE );
 					if ( substr( $base_url, -1 ) == '/')
 						$s3->enable_path_style( TRUE );
 				}
 				if ( stristr( $base_url, 'http://' ) )
 					$s3->disable_ssl();
-				
+
 				$buckets = $s3->list_buckets();
 			}
 			catch ( Exception $e ) {
@@ -587,6 +571,8 @@ class BackWPup_Destination_S3_V1 extends BackWPup_Destinations {
 			_e( 'Missing access key!', 'backwpup' );
 		elseif ( empty( $args[ 's3secretkey' ] ) )
 			_e( 'Missing secret access key!', 'backwpup' );
+		elseif ( ! empty( $error ) && $error == 'Access Denied' )
+			echo '<input type="text" name="s3bucket" id="s3bucket" value="' . esc_attr( $args[ 's3bucketselected' ] ) . '" >';
 		elseif ( ! empty( $error ) )
 			echo esc_html( $error );
 		elseif ( ! isset( $buckets ) || count( $buckets->body->Buckets->Bucket  ) < 1 )

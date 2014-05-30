@@ -71,10 +71,23 @@ class W3_Cdn_Mirror_Netdna extends W3_Cdn_Mirror {
             else {
                 $zone_id = $api->get_zone_id(w3_get_home_url());
             }
+
+            if ($zone_id == 0) {
+                $zone_id = $api->get_zone_id(w3_get_domain_url());
+            }
+
+            if ($zone_id == 0) {
+                $zone_id = $api->get_zone_id(str_replace('://', '://www.', w3_get_domain_url()));
+            }
+
             if ($zone_id == 0 || is_null($zone_id)) {
-                $results[] = $this->_get_result($local_path, $remote_path, W3TC_CDN_RESULT_ERROR, sprintf(__('No zones match site: %s.', 'w3-total-cache'), trim(w3_get_home_url(), '/')));
+                if (w3_get_domain_url() == w3_get_home_url())
+                    $results[] = $this->_get_result($local_path, $remote_path, W3TC_CDN_RESULT_ERROR, sprintf(__('No zones match site: %s.', 'w3-total-cache'), trim(w3_get_home_url(), '/')));
+                else
+                    $results[] = $this->_get_result($local_path, $remote_path, W3TC_CDN_RESULT_ERROR, sprintf(__('No zones match site: %s or %s.', 'w3-total-cache'), trim(w3_get_home_url(), '/'), trim(w3_get_domain_url(), '/')));
                 return !$this->_is_error($results);
             }
+
             $pullzone =  json_decode($api->get('/zones/pull.json/' . $zone_id));
 
             try {
@@ -109,7 +122,7 @@ class W3_Cdn_Mirror_Netdna extends W3_Cdn_Mirror {
                                 }
 
                                 $found_domain = true;
-                            } catch (CurlException $e) {
+                            } catch (W3tcWpHttpException $e) {
                                 $results[] = $this->_get_result($local_path, $remote_path, W3TC_CDN_RESULT_HALT, sprintf(__('Unable to purge (%s).', 'w3-total-cache'), $e->getMessage()));
                             }
                         } else {
@@ -125,11 +138,11 @@ class W3_Cdn_Mirror_Netdna extends W3_Cdn_Mirror {
                         $results[] = $this->_get_result($local_path, $remote_path, W3TC_CDN_RESULT_ERROR, __('Failed with error code ', 'w3-total-cache') . $pullzone->code);
                     }
                 }
-            } catch (CurlException $e) {
+            } catch (W3tcWpHttpException $e) {
                 $results[] = $this->_get_result($local_path, $remote_path, W3TC_CDN_RESULT_HALT, sprintf(__('Unable to purge (%s).', 'w3-total-cache'), $e->getMessage()));
             }
 
-        } catch (CurlException $e) {
+        } catch (W3tcWpHttpException $e) {
             $results[] = $this->_get_result($local_path, $remote_path, W3TC_CDN_RESULT_HALT, __('Failure to pull zone: ', 'w3-total-cache') . $e->getMessage());
         } 
 
@@ -177,10 +190,24 @@ class W3_Cdn_Mirror_Netdna extends W3_Cdn_Mirror {
             else {
                 $zone_id = $api->get_zone_id(w3_get_home_url());
             }
+
+            if ($zone_id == 0) {
+                $zone_id = $api->get_zone_id(w3_get_domain_url());
+            }
+
+
+            if ($zone_id == 0) {
+                $zone_id = $api->get_zone_id(str_replace('://', '://www.', w3_get_domain_url()));
+            }
+
             if ($zone_id == 0 || is_null($zone_id)) {
-                $results[] = $this->_get_result($local_path, $remote_path, W3TC_CDN_RESULT_ERROR, sprintf(__('No zones match site: %s.', 'w3-total-cache'), trim(w3_get_home_url(), '/')));
+                if (w3_get_domain_url() == w3_get_home_url())
+                    $results[] = $this->_get_result($local_path, $remote_path, W3TC_CDN_RESULT_ERROR, sprintf(__('No zones match site: %s.', 'w3-total-cache'), trim(w3_get_home_url(), '/')));
+                else
+                    $results[] = $this->_get_result($local_path, $remote_path, W3TC_CDN_RESULT_ERROR, sprintf(__('No zones match site: %s or %s.', 'w3-total-cache'), trim(w3_get_home_url(), '/'), trim(w3_get_domain_url(), '/')));
                 return !$this->_is_error($results);
             }
+
             $pullzone =  json_decode($api->get('/zones/pull.json/' . $zone_id));
 
             try {
@@ -214,7 +241,7 @@ class W3_Cdn_Mirror_Netdna extends W3_Cdn_Mirror {
                             }
 
                             $found_domain = true;
-                        } catch (CurlException $e) {
+                        } catch (W3tcWpHttpException $e) {
                             $results[] = $this->_get_result($local_path, $remote_path, W3TC_CDN_RESULT_HALT, sprintf(__('Unable to purge (%s).', 'w3-total-cache'), $e->getMessage()));
                         }
                     } else {
@@ -228,11 +255,11 @@ class W3_Cdn_Mirror_Netdna extends W3_Cdn_Mirror {
                         $results[] = $this->_get_result($local_path, $remote_path, W3TC_CDN_RESULT_ERROR, __('Failed with error code ', 'w3-total-cache') . $pullzone->code);
                     }
                 }
-            } catch (CurlException $e) {
+            } catch (W3tcWpHttpException $e) {
                 $results[] = $this->_get_result($local_path, $remote_path, W3TC_CDN_RESULT_HALT, sprintf(__('Unable to purge (%s).', 'w3-total-cache'), $e->getMessage()));
             }
 
-        } catch (CurlException $e) {
+        } catch (W3tcWpHttpException $e) {
             $results[] = $this->_get_result($local_path, $remote_path, W3TC_CDN_RESULT_HALT, __('Failure to pull zone: ', 'w3-total-cache') . $e->getMessage());
         }
 

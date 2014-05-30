@@ -63,12 +63,6 @@ function relevanssi_options() {
 			check_admin_referer(plugin_basename($relevanssi_variables['file']), 'relevanssi_options');
 			relevanssi_remove_all_stopwords();
 		}
-
-		if (isset($_REQUEST['truncate'])) {
-			check_admin_referer(plugin_basename($relevanssi_variables['file']), 'relevanssi_options');
-			$clear_all = true;
-			relevanssi_truncate_cache($clear_all);
-		}
 	}
 	relevanssi_options_form();
 	
@@ -148,12 +142,6 @@ function update_relevanssi_options() {
 		update_option('relevanssi_min_word_length', $value);
 	}
 
-	if (isset($_REQUEST['relevanssi_cache_seconds'])) {
-		$value = intval($_REQUEST['relevanssi_cache_seconds']);
-		if ($value == 0) $value = 86400;
-		update_option('relevanssi_cache_seconds', $value);
-	}
-	
 	if (!isset($_REQUEST['relevanssi_admin_search'])) {
 		$_REQUEST['relevanssi_admin_search'] = "off";
 	}
@@ -204,10 +192,6 @@ function update_relevanssi_options() {
 
 	if (!isset($_REQUEST['relevanssi_expand_shortcodes'])) {
 		$_REQUEST['relevanssi_expand_shortcodes'] = "off";
-	}
-
-	if (!isset($_REQUEST['relevanssi_enable_cache'])) {
-		$_REQUEST['relevanssi_enable_cache'] = "off";
 	}
 
 	if (!isset($_REQUEST['relevanssi_respect_exclude'])) {
@@ -292,6 +276,7 @@ function update_relevanssi_options() {
 	if (isset($_REQUEST['relevanssi_class'])) update_option('relevanssi_class', $_REQUEST['relevanssi_class']);
 	if (isset($_REQUEST['relevanssi_cat'])) update_option('relevanssi_cat', $_REQUEST['relevanssi_cat']);
 	if (isset($_REQUEST['relevanssi_excat'])) update_option('relevanssi_excat', $_REQUEST['relevanssi_excat']);
+	if (isset($_REQUEST['relevanssi_extag'])) update_option('relevanssi_extag', $_REQUEST['relevanssi_extag']);
 	if (isset($_REQUEST['relevanssi_index_fields'])) update_option('relevanssi_index_fields', $_REQUEST['relevanssi_index_fields']);
 	if (isset($_REQUEST['relevanssi_expst'])) update_option('relevanssi_exclude_posts', $_REQUEST['relevanssi_expst']); 			//added by OdditY
 	if (isset($_REQUEST['relevanssi_hilite_title'])) update_option('relevanssi_hilite_title', $_REQUEST['relevanssi_hilite_title']); 	//added by OdditY	
@@ -305,7 +290,6 @@ function update_relevanssi_options() {
 	if (isset($_REQUEST['relevanssi_index_limit'])) update_option('relevanssi_index_limit', $_REQUEST['relevanssi_index_limit']);
 	if (isset($_REQUEST['relevanssi_disable_or_fallback'])) update_option('relevanssi_disable_or_fallback', $_REQUEST['relevanssi_disable_or_fallback']);
 	if (isset($_REQUEST['relevanssi_respect_exclude'])) update_option('relevanssi_respect_exclude', $_REQUEST['relevanssi_respect_exclude']);
-	if (isset($_REQUEST['relevanssi_enable_cache'])) update_option('relevanssi_enable_cache', $_REQUEST['relevanssi_enable_cache']);
 	if (isset($_REQUEST['relevanssi_throttle'])) update_option('relevanssi_throttle', $_REQUEST['relevanssi_throttle']);
 	if (isset($_REQUEST['relevanssi_throttle_limit'])) update_option('relevanssi_throttle_limit', $_REQUEST['relevanssi_throttle_limit']);
 	if (isset($_REQUEST['relevanssi_wpml_only_current'])) update_option('relevanssi_wpml_only_current', $_REQUEST['relevanssi_wpml_only_current']);
@@ -368,8 +352,7 @@ function relevanssi_add_single_stopword($term) {
 function relevanssi_remove_all_stopwords() {
 	global $wpdb, $relevanssi_variables;
 	
-	$q = $wpdb->prepare("TRUNCATE " . $relevanssi_variables['stopword_table']);
-	$success = $wpdb->query($q);
+	$success = $wpdb->query("TRUNCATE " . $relevanssi_variables['stopword_table']);
 	
 	printf(__("<div id='message' class='updated fade'><p>Stopwords removed! Remember to re-index.</p></div>", "relevanssi"), $term);
 }
@@ -554,7 +537,6 @@ function relevanssi_options_form() {
 	$docs_count = $wpdb->get_var("SELECT COUNT(DISTINCT doc) FROM " . $relevanssi_variables['relevanssi_table']);
 	$terms_count = $wpdb->get_var("SELECT COUNT(*) FROM " . $relevanssi_variables['relevanssi_table']);
 	$biggest_doc = $wpdb->get_var("SELECT doc FROM " . $relevanssi_variables['relevanssi_table'] . " ORDER BY doc DESC LIMIT 1");
-	$cache_count = $wpdb->get_var("SELECT COUNT(tstamp) FROM " . $relevanssi_variables['relevanssi_cache']);
 	
 	$serialize_options = array();
 	
@@ -680,6 +662,8 @@ function relevanssi_options_form() {
 	$serialize_options['relevanssi_cat'] = $cat;
 	$excat = get_option('relevanssi_excat');
 	$serialize_options['relevanssi_excat'] = $excat;
+	$extag = get_option('relevanssi_extag');
+	$serialize_options['relevanssi_extag'] = $extag;
 	
 	$fuzzy = get_option('relevanssi_fuzzy');
 	$serialize_options['relevanssi_fuzzy'] = $fuzzy;
@@ -739,11 +723,6 @@ function relevanssi_options_form() {
 
 	$respect_exclude = ('on' == get_option('relevanssi_respect_exclude') ? 'checked="checked"' : ''); 
 	$serialize_options['relevanssi_respect_exclude'] = get_option('relevanssi_respect_exclude');
-
-	$enable_cache = ('on' == get_option('relevanssi_enable_cache') ? 'checked="checked"' : ''); 
-	$serialize_options['relevanssi_enable_cache'] = get_option('relevanssi_enable_cache');
-	$cache_seconds = get_option('relevanssi_cache_seconds');
-	$serialize_options['relevanssi_cache_seconds'] = $cache_seconds;
 
 	$min_word_length = get_option('relevanssi_min_word_length');
 	$serialize_options['relevanssi_min_word_length'] = $min_word_length;
@@ -850,7 +829,6 @@ function relevanssi_options_form() {
     <a href="#excerpts"><?php _e("Custom excerpts", "relevanssi"); ?></a> |
     <a href="#highlighting"><?php _e("Highlighting search results", "relevanssi"); ?></a> |
     <a href="#indexing"><?php _e("Indexing options", "relevanssi"); ?></a> |
-    <a href="#caching"><?php _e("Caching", "relevanssi"); ?></a> |
     <a href="#synonyms"><?php _e("Synonyms", "relevanssi"); ?></a> |
     <a href="#stopwords"><?php _e("Stopwords", "relevanssi"); ?></a> |
 <?php
@@ -865,9 +843,9 @@ function relevanssi_options_form() {
 
 	<h3><?php _e('Quick tools', 'relevanssi') ?></h3>
 	<p>
-	<input type='submit' name='submit' value='<?php _e('Save options', 'relevanssi'); ?>' style="background-color:#007f00; border-color:#5fbf00; border-style:solid; border-width:thick; padding: 5px; color: #fff;" />
-	<input type="submit" name="index" value="<?php _e('Build the index', 'relevanssi') ?>" style="background-color:#007f00; border-color:#5fbf00; border-style:solid; border-width:thick; padding: 5px; color: #fff;" />
-	<input type="submit" name="index_extend" value="<?php _e('Continue indexing', 'relevanssi') ?>"  style="background-color:#e87000; border-color:#ffbb00; border-style:solid; border-width:thick; padding: 5px; color: #fff;" />, <?php _e('add', 'relevanssi'); ?> <input type="text" size="4" name="relevanssi_index_limit" value="<?php echo $index_limit ?>" /> <?php _e('documents.', 'relevanssi'); ?></p>
+	<input type='submit' name='submit' value='<?php _e(esc_attr('Save options'), 'relevanssi'); ?>' class='button-primary' />
+	<input type="submit" name="index" value="<?php _e(esc_attr('Build the index'), 'relevanssi') ?>" class='button-primary' />
+	<input type="submit" name="index_extend" value="<?php _e(esc_attr('Continue indexing'), 'relevanssi') ?>" class='button-secondary' />, <?php _e('add', 'relevanssi'); ?> <input type="text" size="4" name="relevanssi_index_limit" value="<?php echo $index_limit ?>" /> <?php _e('documents.', 'relevanssi'); ?></p>
 
 <?php
 	if (empty($index_post_types)) {
@@ -877,10 +855,6 @@ function relevanssi_options_form() {
 
 	<p><?php _e("Use 'Build the index' to build the index with current <a href='#indexing'>indexing options</a>. If you can't finish indexing with one go, use 'Continue indexing' to finish the job. You can change the number of documents to add until you find the largest amount you can add with one go. See 'State of the Index' below to find out how many documents actually go into the index.", 'relevanssi') ?></p>
 
-	<p><?php _e("If Relevanssi doesn't index anything and you have upgraded from a 2.x version, it's likely the changes in
-	the database structure haven't gone through in the upgrade. In that case all you need to do is to deactivate the
-	plugin and then activate it again.", 'relevanssi') ?></p>
-	
 	<h3><?php _e("State of the Index", "relevanssi"); ?></h3>
 	<p>
 	<?php _e("Documents in the index", "relevanssi"); ?>: <strong><?php echo $docs_count ?></strong><br />
@@ -1001,7 +975,7 @@ function relevanssi_options_form() {
 	<?php if (function_exists('relevanssi_form_recency')) relevanssi_form_recency($recency_bonus, $recency_bonus_days); ?>
 	
 	<?php if (function_exists('icl_object_id')) : ?>
-	<h3 id="wpml"><?php _e('WPML compatibility', 'relevanssi'); ?></h3>
+	<h3 id="wpml"><?php _e('WPML/Polylang compatibility', 'relevanssi'); ?></h3>
 	
 	<label for='relevanssi_wpml_only_current'><?php _e("Limit results to current language:", "relevanssi"); ?>
 	<input type='checkbox' name='relevanssi_wpml_only_current' id='relevanssi_wpml_only_current' <?php echo $wpml_only_current ?> /></label>
@@ -1024,7 +998,7 @@ function relevanssi_options_form() {
 	<br /><br />
 
 	<label for='relevanssi_omit_from_logs'><?php _e("Don't log queries from these users:", "relevanssi"); ?>
-	<input type='text' name='relevanssi_omit_from_logs' id='relevanssi_omit_from_logs' size='20' value='<?php echo $omit_from_logs ?>' /></label>
+	<input type='text' name='relevanssi_omit_from_logs' id='relevanssi_omit_from_logs' size='20' value='<?php echo esc_attr($omit_from_logs); ?>' /></label>
 	<small><?php _e("Comma-separated list of numeric user IDs or user login names that will not be logged.", "relevanssi"); ?></small>
 
 <?php
@@ -1041,19 +1015,25 @@ function relevanssi_options_form() {
 	<h3 id="exclusions"><?php _e("Exclusions and restrictions", "relevanssi"); ?></h3>
 	
 	<label for='relevanssi_cat'><?php _e('Restrict search to these categories and tags:', 'relevanssi'); ?>
-	<input type='text' name='relevanssi_cat' id='relevanssi_cat' size='20' value='<?php echo $cat ?>' /></label><br />
+	<input type='text' name='relevanssi_cat' id='relevanssi_cat' size='20' value='<?php echo esc_attr($cat); ?>' /></label><br />
 	<small><?php _e("Enter a comma-separated list of category and tag IDs to restrict search to those categories or tags. You can also use <code>&lt;input type='hidden' name='cats' value='list of cats and tags' /&gt;</code> in your search form. The input field will 	overrun this setting.", 'relevanssi'); ?></small>
 
 	<br /><br />
 
-	<label for='relevanssi_excat'><?php _e('Exclude these categories and tags from search:', 'relevanssi'); ?>
-	<input type='text' name='relevanssi_excat' id='relevanssi_excat' size='20' value='<?php echo $excat ?>' /></label><br />
-	<small><?php _e("Enter a comma-separated list of category and tag IDs that are excluded from search results. You can exclude categories with the 'cat' input field by using negative values.", 'relevanssi'); ?></small>
+	<label for='relevanssi_excat'><?php _e('Exclude these categories from search:', 'relevanssi'); ?>
+	<input type='text' name='relevanssi_excat' id='relevanssi_excat' size='20' value='<?php echo esc_attr($excat); ?>' /></label><br />
+	<small><?php _e("Enter a comma-separated list of category IDs that are excluded from search results.", 'relevanssi'); ?></small>
+
+	<br /><br />
+
+	<label for='relevanssi_extag'><?php _e('Exclude these tags from search:', 'relevanssi'); ?>
+	<input type='text' name='relevanssi_extag' id='relevanssi_extag' size='20' value='<?php echo esc_attr($extag); ?>' /></label><br />
+	<small><?php _e("Enter a comma-separated list of tag IDs that are excluded from search results.", 'relevanssi'); ?></small>
 
 	<br /><br />
 
 	<label for='relevanssi_expst'><?php _e('Exclude these posts/pages from search:', 'relevanssi'); ?>
-	<input type='text'  name='relevanssi_expst' id='relevanssi_expst' size='20' value='<?php echo $expst ?>' /></label><br />
+	<input type='text'  name='relevanssi_expst' id='relevanssi_expst' size='20' value='<?php echo esc_attr($expst); ?>' /></label><br />
 <?php
 	if (RELEVANSSI_PREMIUM) {
 		echo "<small>" . __("Enter a comma-separated list of post/page IDs that are excluded from search results. This only works here, you can't use the input field option (WordPress doesn't pass custom parameters there). You can also use a checkbox on post/page edit pages to remove posts from index.", 'relevanssi') . "</small>";
@@ -1078,7 +1058,7 @@ function relevanssi_options_form() {
 	<p><?php _e('Note: Building custom excerpts can be slow. If you are not actually using the excerpts, make sure you disable the option.', 'relevanssi'); ?></p>
 	
 	<label for='relevanssi_excerpt_length'><?php _e("Length of the snippet:", "relevanssi"); ?>
-	<input type='text' name='relevanssi_excerpt_length' id='relevanssi_excerpt_length' size='4' value='<?php echo $excerpt_length ?>' /></label>
+	<input type='text' name='relevanssi_excerpt_length' id='relevanssi_excerpt_length' size='4' value='<?php echo esc_attr($excerpt_length); ?>' /></label>
 	<select name='relevanssi_excerpt_type' id='relevanssi_excerpt_type'>
 	<option value='chars' <?php echo $excerpt_chars ?>><?php _e("characters", "relevanssi"); ?></option>
 	<option value='words' <?php echo $excerpt_words ?>><?php _e("words", "relevanssi"); ?></option>
@@ -1088,7 +1068,7 @@ function relevanssi_options_form() {
 	<br /><br />
 
 	<label for='relevanssi_excerpt_allowable_tags'><?php _e("Allowable tags in excerpts:", "relevanssi"); ?>
-	<input type='text' name='relevanssi_excerpt_allowable_tags' id='relevanssi_excerpt_allowable_tags' size='20' value='<?php echo $excerpt_allowable_tags ?>' /></label>
+	<input type='text' name='relevanssi_excerpt_allowable_tags' id='relevanssi_excerpt_allowable_tags' size='20' value='<?php echo esc_attr($excerpt_allowable_tags); ?>' /></label>
 	<br />
 	<small><?php _e("List all tags you want to allow in excerpts, without any whitespace. For example: '&lt;p&gt;&lt;a&gt;&lt;strong&gt;'.", "relevanssi"); ?></small>
 
@@ -1101,7 +1081,7 @@ function relevanssi_options_form() {
 	<br /><br />
 
 	<label for='relevanssi_show_matches_text'><?php _e("The breakdown format:", "relevanssi"); ?>
-	<input type='text' name='relevanssi_show_matches_text' id='relevanssi_show_matches_text' value="<?php echo $show_matches_text ?>" size='20' /></label>
+	<input type='text' name='relevanssi_show_matches_text' id='relevanssi_show_matches_text' value="<?php echo esc_attr($show_matches_text) ?>" size='20' /></label>
 	<small><?php _e("Use %body%, %title%, %tags% and %comments% to display the number of hits (in different parts of the post), %total% for total hits, %score% to display the document weight and %terms% to show how many hits each search term got. No double quotes (\") allowed!", "relevanssi"); ?></small>
 
 	<h3 id="highlighting"><?php _e("Search hit highlighting", "relevanssi"); ?></h3>
@@ -1156,25 +1136,25 @@ function relevanssi_options_form() {
 	<div style='margin-left: 2em'>
 	
 	<label for='relevanssi_txt_col'><?php _e("Text color for highlights:", "relevanssi"); ?>
-	<input type='text' name='relevanssi_txt_col' id='relevanssi_txt_col' size='7' value='<?php echo $txt_col ?>' /></label>
+	<input type='text' name='relevanssi_txt_col' id='relevanssi_txt_col' size='7' value='<?php echo esc_attr($txt_col); ?>' /></label>
 	<small><?php _e("Use HTML color codes (#rgb or #rrggbb)", "relevanssi"); ?></small>
 
 	<br />
 	
 	<label for='relevanssi_bg_col'><?php _e("Background color for highlights:", "relevanssi"); ?>
-	<input type='text' name='relevanssi_bg_col' id='relevanssi_bg_col' size='7' value='<?php echo $bg_col ?>' /></label>
+	<input type='text' name='relevanssi_bg_col' id='relevanssi_bg_col' size='7' value='<?php echo esc_attr($bg_col); ?>' /></label>
 	<small><?php _e("Use HTML color codes (#rgb or #rrggbb)", "relevanssi"); ?></small>
 
 	<br />
 	
 	<label for='relevanssi_css'><?php _e("CSS style for highlights:", "relevanssi"); ?>
-	<input type='text' name='relevanssi_css' id='relevanssi_css' size='30' value='<?php echo $css ?>' /></label>
+	<input type='text' name='relevanssi_css' id='relevanssi_css' size='30' value='<?php echo esc_attr($css); ?>' /></label>
 	<small><?php _e("You can use any CSS styling here, style will be inserted with a &lt;span&gt;", "relevanssi"); ?></small>
 
 	<br />
 	
 	<label for='relevanssi_class'><?php _e("CSS class for highlights:", "relevanssi"); ?>
-	<input type='text' name='relevanssi_class' id='relevanssi_class' size='10' value='<?php echo $class ?>' /></label>
+	<input type='text' name='relevanssi_class' id='relevanssi_class' size='10' value='<?php echo esc_attr($class); ?>' /></label>
 	<small><?php _e("Name a class here, search results will be wrapped in a &lt;span&gt; with the class", "relevanssi"); ?></small>
 
 	</div>
@@ -1182,7 +1162,7 @@ function relevanssi_options_form() {
 	<br />
 	<br />
 	
-	<input type='submit' name='submit' value='<?php _e('Save the options', 'relevanssi'); ?>' class='button button-primary' />
+	<input type='submit' name='submit' value='<?php _e(esc_attr('Save the options'), 'relevanssi'); ?>' class='button button-primary' />
 
 	<h3 id="indexing"><?php _e('Indexing options', 'relevanssi'); ?></h3>
 
@@ -1279,7 +1259,7 @@ EOH;
 	<br /><br />
 		
 	<label for='relevanssi_min_word_length'><?php _e("Minimum word length to index", "relevanssi"); ?>:
-	<input type='text' name='relevanssi_min_word_length' id='relevanssi_min_word_length' size='30' value='<?php echo $min_word_length ?>' /></label><br />
+	<input type='text' name='relevanssi_min_word_length' id='relevanssi_min_word_length' size='30' value='<?php echo esc_attr($min_word_length); ?>' /></label><br />
 	<small><?php _e("Words shorter than this number will not be indexed.", "relevanssi"); ?></small>
 
 	<br /><br />
@@ -1317,7 +1297,7 @@ EOH;
 	<br /><br />
 
 	<label for='relevanssi_index_fields'><?php _e("Custom fields to index:", "relevanssi"); ?>
-	<input type='text' name='relevanssi_index_fields' id='relevanssi_index_fields' size='30' value='<?php echo $index_fields ?>' /></label><br />
+	<input type='text' name='relevanssi_index_fields' id='relevanssi_index_fields' size='30' value='<?php echo esc_attr($index_fields) ?>' /></label><br />
 	<small><?php _e("A comma-separated list of custom fields to include in the index. Set to 'visible' to index all visible custom fields and to 'all' to index all custom fields, also those starting with a '_' character.", "relevanssi"); ?></small>
 
 	<br /><br />
@@ -1328,32 +1308,9 @@ EOH;
 
 <?php if (function_exists('relevanssi_form_index_taxonomies')) relevanssi_form_index_taxonomies($index_taxonomies, $index_terms); ?>
 
-	<input type='submit' name='index' value='<?php _e("Save indexing options and build the index", 'relevanssi'); ?>' class='button button-primary' />
+	<input type='submit' name='index' value='<?php _e(esc_attr("Save indexing options, erase index and rebuild the index"), 'relevanssi'); ?>' class='button button-primary' />
 
-	<input type='submit' name='index_extend' value='<?php _e("Continue indexing", 'relevanssi'); ?>' class='button' />
-
-	<h3 id="caching"><?php _e("Caching", "relevanssi"); ?></h3>
-
-	<p><?php _e("Warning: In many cases caching is not useful, and in some cases can be even harmful. Do not
-	activate cache unless you have a good reason to do so.", 'relevanssi'); ?></p>
-	
-	<label for='relevanssi_enable_cache'><?php _e('Enable result and excerpt caching:', 'relevanssi'); ?>
-	<input type='checkbox' name='relevanssi_enable_cache' id='relevanssi_enable_cache' <?php echo $enable_cache ?> /></label><br />
-	<small><?php _e("If checked, Relevanssi will cache search results and post excerpts.", 'relevanssi'); ?></small>
-
-	<br /><br />
-	
-	<label for='relevanssi_cache_seconds'><?php _e("Cache expire (in seconds):", "relevanssi"); ?>
-	<input type='text' name='relevanssi_cache_seconds' id='relevanssi_cache_seconds' size='30' value='<?php echo $cache_seconds ?>' /></label><br />
-	<small><?php _e("86400 = day", "relevanssi"); ?></small>
-
-	<br /><br />
-	
-	<?php _e("Entries in the cache", 'relevanssi'); ?>: <?php echo $cache_count; ?>
-
-	<br /><br />
-	
-	<input type='submit' name='truncate' id='truncate' value='<?php _e('Clear all caches', 'relevanssi'); ?>' class='button' />
+	<input type='submit' name='index_extend' value='<?php _e(esc_attr("Continue indexing"), 'relevanssi'); ?>' class='button' />
 
 	<h3 id="synonyms"><?php _e("Synonyms", "relevanssi"); ?></h3>
 	
@@ -1361,7 +1318,7 @@ EOH;
 
 	<p><small><?php _e("Add synonyms here in 'key = value' format. When searching with the OR operator, any search of 'key' will be expanded to include 'value' as well. Using phrases is possible. The key-value pairs work in one direction only, but you can of course repeat the same pair reversed.", "relevanssi"); ?></small></p>
 
-	<input type='submit' name='submit' value='<?php _e('Save the options', 'relevanssi'); ?>' class='button' />
+	<input type='submit' name='submit' value='<?php _e(esc_attr('Save the options'), 'relevanssi'); ?>' class='button' />
 
 	<h3 id="stopwords"><?php _e("Stopwords", "relevanssi"); ?></h3>
 	
@@ -1385,7 +1342,7 @@ function relevanssi_show_stopwords() {
 	_e("<p>Enter a word here to add it to the list of stopwords. The word will automatically be removed from the index, so re-indexing is not necessary. You can enter many words at the same time, separate words with commas.</p>", 'relevanssi');
 
 ?><label for="addstopword"><p><?php _e("Stopword(s) to add: ", 'relevanssi'); ?><textarea name="addstopword" id="addstopword" rows="2" cols="40"></textarea>
-<input type="submit" value="<?php _e("Add", 'relevanssi'); ?>" class='button' /></p></label>
+<input type="submit" value="<?php _e(esc_attr("Add"), 'relevanssi'); ?>" class='button' /></p></label>
 <?php
 
 	_e("<p>Here's a list of stopwords in the database. Click a word to remove it from stopwords. Removing stopwords won't automatically return them to index, so you need to re-index all posts after removing stopwords to get those words back to index.", 'relevanssi');
@@ -1408,13 +1365,13 @@ function relevanssi_show_stopwords() {
 	$exportlist = array();
 	foreach ($results as $stopword) {
 		$sw = $stopword->stopword; 
-		printf('<li style="display: inline;"><input type="submit" name="removestopword" value="%s"/></li>', $sw, $src, $sw);
+		printf('<li style="display: inline;"><input type="submit" name="removestopword" value="%s"/></li>', esc_attr($sw));
 		array_push($exportlist, $sw);
 	}
 	echo "</ul>";
 	
 ?>
-<p><input type="submit" name="removeallstopwords" value="<?php _e('Remove all stopwords', 'relevanssi'); ?>" class='button' /></p>
+<p><input type="submit" name="removeallstopwords" value="<?php _e(esc_attr('Remove all stopwords'), 'relevanssi'); ?>" class='button' /></p>
 <?php
 
 	$exportlist = implode(", ", $exportlist);

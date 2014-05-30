@@ -9,13 +9,35 @@ class BackWPup_Install {
 	 */
 	public static function activate() {
 
-		//do upgrade from version 2.x
+		//convert inactive version to active
+		if ( $incative_version = get_site_option( 'backwpup_version' ) ) {
+			update_site_option( 'backwpup_version', str_replace( '-inactive', '', $incative_version ) );
+		}
+
+		//changes for version before 3.0.0
 		if ( ! get_site_option( 'backwpup_version' ) && get_option( 'backwpup' ) && get_option( 'backwpup_jobs' ) )
 			self::upgrade_from_version_two();
 
-		//create new option on not ms blogs
-		if ( ! is_multisite() && ! get_option( 'backwpup_jobs', FALSE ) )
-			add_option( 'backwpup_jobs', array( ), NULL, 'no');
+		//changes for version before 3.0.14
+		if ( version_compare( '3.0.13', get_site_option( 'backwpup_version' ), '>' ) && version_compare( '3.0', get_site_option( 'backwpup_version' ), '<' ) ) {
+			$upload_dir = wp_upload_dir();
+			$logfolder = get_site_option( 'backwpup_cfg_logfolder' );
+			if ( empty( $logfolder ) ) {
+				$old_log_folder = trailingslashit( str_replace( '\\', '/',$upload_dir[ 'basedir' ] ) ) . 'backwpup-' . substr( md5( md5( SECURE_AUTH_KEY ) ), 9, 5 ) . '-logs/';
+				update_site_option( 'backwpup_cfg_logfolder', $old_log_folder );
+			}
+		}
+
+		//changes for version before 3.1.2
+		if ( version_compare( '3.1.2', get_site_option( 'backwpup_version' ), '>' ) ) {
+			BackWPup_Job::check_folder( get_site_option( 'backwpup_cfg_logfolder' ), TRUE );
+		}
+
+		//create new options
+		if ( is_multisite() )
+			add_site_option( 'backwpup_jobs', array() );
+		else
+			add_option( 'backwpup_jobs', array(), NULL, 'no' );
 
 		//remove old schedule
 		wp_clear_scheduled_hook( 'backwpup_cron' );
@@ -43,7 +65,7 @@ class BackWPup_Install {
 		$role->remove_cap( 'backwpup_backups_delete' );
 		$role->remove_cap( 'backwpup_logs' );
 		$role->remove_cap( 'backwpup_logs_delete' );
-		$role->remove_cap( 'backwpup_settings' );			
+		$role->remove_cap( 'backwpup_settings' );
 
 		//add/overwrite roles
 		add_role( 'backwpup_admin', __( 'BackWPup Admin', 'backwpup' ), array(
@@ -84,7 +106,7 @@ class BackWPup_Install {
 																		 'backwpup_logs_delete' => TRUE,
 																		 'backwpup_settings' => FALSE,
 																	) );
-		
+
 		//add role to admin user if no one
 		$users_backwpup = get_users( array( 'blog_id' => 1, 'role' => 'backwpup_admin' ) );
 		if ( empty( $users_backwpup ) ) {
@@ -95,22 +117,11 @@ class BackWPup_Install {
 			}
 		}
 
-		//add cfg options to database prevent false false if option not exists
-		$cfg_options = BackWPup_Option::defaults( 'cfg', NULL );
-		foreach ( $cfg_options as $cfg => $option ) {
-			//options to exclude
-			if ( in_array( $cfg, array( 'dropboxappkey', 'dropboxappsecret', 'dropboxsandboxappkey', 'dropboxsandboxappsecret', 'sugarsynckey', 'sugarsyncsecret', 'sugarsyncappid' ) ) ) 
-				continue;
-			//detect if option already exists
-			$test_option_exists = get_site_option( 'backwpup_cfg_' . $cfg, 'TEST12345TEST' );
-			//add option if not exists
-			if ( $test_option_exists == 'TEST12345TEST') 
-				add_site_option( 'backwpup_cfg_' . $cfg, $option );
-		}
-		
+		//add default options
+		BackWPup_Option::default_site_options();
+
 		//update version
 		update_site_option( 'backwpup_version', BackWPup::get_plugin_data( 'Version' ) );
-				
 	}
 
 	/**
@@ -130,7 +141,7 @@ class BackWPup_Install {
 		}
 		wp_clear_scheduled_hook( 'backwpup_check_cleanup' );
 		//to reschedule on activation and so on
-		update_site_option( 'backwpup_version', BackWPup::get_plugin_data( 'version' ) .'-inactive' );
+		update_site_option( 'backwpup_version', get_site_option( 'backwpup_version' ) .'-inactive' );
 	}
 
 
@@ -146,7 +157,7 @@ class BackWPup_Install {
 
 		//add new option default structure and without auto load cache
 		if ( ! is_multisite() )
-			add_option( 'backwpup_jobs', array( ), NULL, 'no');
+			add_option( 'backwpup_jobs', array(), NULL, 'no' );
 
 		//upgrade cfg
 		//if old value switch it to new
@@ -161,7 +172,7 @@ class BackWPup_Install {
 		unset( $cfg[ 'dirtemp' ], $cfg[ 'dirlogs' ], $cfg[ 'logfilelist' ], $cfg[ 'jobscriptruntime' ], $cfg[ 'jobscriptruntimelong' ], $cfg[ 'last_activate' ], $cfg[ 'disablewpcron' ], $cfg[ 'phpzip' ], $cfg[ 'apicronservice' ], $cfg[ 'mailsndemail' ], $cfg[ 'mailsndname' ], $cfg[ 'mailmethod' ], $cfg[ 'mailsendmail' ], $cfg[ 'mailhost' ], $cfg[ 'mailpass' ], $cfg[ 'mailhostport' ], $cfg[ 'mailsecure' ], $cfg[ 'mailuser' ] );
 		//save in options
 		foreach ( $cfg as $cfgname => $cfgvalue )
-			BackWPup_Option::update( 'cfg', $cfgname, $cfgvalue );
+			update_site_option( 'backwpup_cfg_' . $cfgname, $cfgvalue );
 
 		//Put old jobs to new if exists
 		foreach ( $jobs as $jobid => $jobvalue ) {
@@ -182,7 +193,7 @@ class BackWPup_Install {
 				if ( $type == 'DB' )
 					$jobvalue[ 'type' ][ $key ] = 'DBDUMP';
 				if ( $type == 'OPTIMIZE' )
-					$jobvalue[ 'type' ][ $key ] = 'DBOPTIMIZE';
+					unset( $jobvalue[ 'type' ][ $key ] );
 				if ( $type == 'CHECK' )
 					$jobvalue[ 'type' ][ $key ] = 'DBCHECK';
 				if ( $type == 'MAIL' )
@@ -261,7 +272,7 @@ class BackWPup_Install {
 			//convert jobtype DB Dump
 			$jobvalue[ 'dbdumpexclude' ] = $jobvalue[ 'dbexclude' ];
 			unset( $jobvalue[ 'dbexclude' ], $jobvalue['dbshortinsert'] );
-			//convert jobtype DBDUMP, DBCHECK, DBOPTIMIZE
+			//convert jobtype DBDUMP, DBCHECK
 			$jobvalue[ 'dbcheckrepair' ] = TRUE;
 			unset( $jobvalue[ 'maintenance' ] );
 			//convert jobtype wpexport

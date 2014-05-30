@@ -11,13 +11,17 @@ function relevanssi_query($posts, $query = false) {
 	if (!is_search()) {
 		$search_ok = false;						// no, we can't
 	}
-	
+
 	// Uses $wp_query->is_admin instead of is_admin() to help with Ajax queries that
 	// use 'admin_ajax' hook (which sets is_admin() to true whether it's an admin search
 	// or not.
 	if (is_search() && $wp_query->is_admin) {
 		$search_ok = false; 					// but if this is an admin search, reconsider
 		if ($admin_search) $search_ok = true; 	// yes, we can search!
+	}
+
+	if ($wp_query->is_admin && empty($wp_query->query_vars['s'])) {
+		$search_ok = false;
 	}
 
 	// Disable search in media library search
@@ -37,56 +41,19 @@ function relevanssi_query($posts, $query = false) {
 		$wp_query = apply_filters('relevanssi_modify_wp_query', $wp_query);
 		$posts = relevanssi_do_query($wp_query);
 	}
-
+	
 	return $posts;
 }
 
 // This is my own magic working.
-function relevanssi_search($q, $tax_query = NULL, $relation = NULL, $post_query = array(), $meta_query = array(), $expost = NULL, $post_type = NULL, $operator = "AND", $search_blogs = NULL, $author = NULL, $orderby = NULL, $order = NULL) {
+function relevanssi_search($args) {
 	global $wpdb, $relevanssi_variables;
 	$relevanssi_table = $relevanssi_variables['relevanssi_table'];
-
-	$values_to_filter = array(
-		'q' => $q,
-		'tax_query' => $tax_query,
-		'relation' => $relation,
-		'post_query' => $post_query,
-		'meta_query' => $meta_query,
-		'expost' => $expost,
-		'post_type' => $post_type,
-		'operator' => $operator,
-		'search_blogs' => $search_blogs,
-		'author' => $author,
-		'orderby' => $orderby,
-		'order' => $order,
-		);
-	$filtered_values = apply_filters( 'relevanssi_search_filters', $values_to_filter );
-	$q               = $filtered_values['q'];
-	$tax_query		 = $filtered_values['tax_query'];
-	$post_query		 = $filtered_values['post_query'];
-	$meta_query		 = $filtered_values['meta_query'];
-	$relation		 = $filtered_values['relation'];
-	$expost          = $filtered_values['expost'];
-	$post_type       = $filtered_values['post_type'];
-	$operator        = $filtered_values['operator'];
-	$search_blogs    = $filtered_values['search_blogs'];
-	$author	  	     = $filtered_values['author'];
-	$orderby  	     = $filtered_values['orderby'];
-	$order  	     = $filtered_values['order'];
-
+	
+	$filtered_args = apply_filters( 'relevanssi_search_filters', $args );
+	extract($filtered_args);
+	
 	$hits = array();
-
-	$o_tax_query = $tax_query;
-	$o_relation = $relation;
-	$o_post_query = $post_query;
-	$o_meta_query = $meta_query;
-	$o_expost = $expost;
-	$o_post_type = $post_type;
-	$o_author = $author;
-	$o_operator = $operator;
-	$o_search_blogs = $search_blogs;
-	$o_orderby = $orderby;
-	$o_order = $order;
 
 	$query_restrictions = "";
 	if (!isset($relation)) $relation = "or";
@@ -94,41 +61,74 @@ function relevanssi_search($q, $tax_query = NULL, $relation = NULL, $post_query 
 	$term_tax_id = array();
 	$term_tax_ids = array();	
 	$not_term_tax_ids = array();	
-	$and_term_tax_ids = array();	
+	$and_term_tax_ids = array();
+	
 	if (is_array($tax_query)) {
 		foreach ($tax_query as $row) {
-			if ($row['field'] == 'id') {
-				$id = $row['terms'];
-				$term_id = $id;
-				if (is_array($id)) {
-					$id = implode(',', $id);
-				}
-				$term_tax_id = $wpdb->get_col(
-					"SELECT term_taxonomy_id
-					FROM $wpdb->term_taxonomy
-					WHERE term_id IN ($id)");
-			}
 			if ($row['field'] == 'slug') {
 				$slug = $row['terms'];
+				$numeric_slugs = array();
+				$slug_in = null;
 				if (is_array($slug)) {
 					$slugs = array();
 					$term_id = array();
 					foreach ($slug as $t_slug) {
 						$term = get_term_by('slug', $t_slug, $row['taxonomy']);
-						$term_id[] = $term->term_id;
-						$slugs[] = "'$t_slug'";
+						if (!$term && is_numeric($t_slug)) {
+							$numeric_slugs[] = "'$t_slug'";
+						}
+						else {
+							$t_slug = sanitize_title($t_slug);
+							$term_id[] = $term->term_id;
+							$slugs[] = "'$t_slug'";
+						}
 					}
-					$slug = implode(',', $slugs);
+					if (!empty($slugs)) $slug_in = implode(',', $slugs);
 				}
 				else {
 					$term = get_term_by('slug', $slug, $row['taxonomy']);
-					$term_id = $term->term_id;
-					$slug = "'$slug'";
+					if (!$term && is_numeric($slug)) {
+						$numeric_slugs[] = $slug;
+					}
+					else {
+						$term_id = $term->term_id;
+						$slug_in = "'$slug'";
+					}
 				}
-				$term_tax_id = $wpdb->get_col(
-					"SELECT tt.term_taxonomy_id
-					FROM $wpdb->terms AS t, $wpdb->term_taxonomy AS tt
-					WHERE tt.term_id = t.term_id AND tt.taxonomy = '" . $row['taxonomy'] . "' AND t.slug IN ($slug)");
+				if (!empty($slug_in)) {
+					$row_taxonomy = sanitize_title($row['taxonomy']);
+					$tt_q = "SELECT tt.term_taxonomy_id
+						  	FROM $wpdb->term_taxonomy AS tt
+						  	LEFT JOIN $wpdb->terms AS t ON (tt.term_id=t.term_id)
+						  	WHERE tt.taxonomy = '$row_taxonomy' AND t.slug IN ($slug_in)";
+					// Clean: $row_taxonomy is sanitized, each slug in $slug_in is sanitized
+					$term_tax_id = $wpdb->get_col($tt_q);
+				}
+				if (!empty($numeric_slugs)) $row['field'] = 'id';
+			}
+			if ($row['field'] == 'id' || $row['field'] == 'term_id') {
+				$id = $row['terms'];
+				$term_id = $id;
+				if (is_array($id)) {
+					$numeric_values = array();
+					foreach ($id as $t_id) {
+						if (is_numeric($t_id)) $numeric_values[] = $t_id;
+					}
+					$id = implode(',', $numeric_values);
+				}
+				$row_taxonomy = sanitize_title($row['taxonomy']);
+				$tt_q = "SELECT tt.term_taxonomy_id
+				  	FROM $wpdb->term_taxonomy AS tt
+				  	LEFT JOIN $wpdb->terms AS t ON (tt.term_id=t.term_id)
+				  	WHERE tt.taxonomy = '$row_taxonomy' AND t.term_id IN ($id)";
+				// Clean: $row_taxonomy is sanitized, $id is checked to be numeric
+				$id_term_tax_id = $wpdb->get_col($tt_q);
+				if (!empty($term_tax_id) && is_array($term_tax_id)) {
+					$term_tax_id = array_unique(array_merge($term_tax_id, $id_term_tax_id));
+				}
+				else {
+					$term_tax_id = $id_term_tax_id;
+				}
 			}
 			
 			if (!isset($row['include_children']) || $row['include_children'] == true) {
@@ -154,18 +154,20 @@ function relevanssi_search($q, $tax_query = NULL, $relation = NULL, $post_query 
 				if ($tq_operator != 'IN' && $tq_operator != 'NOT IN' && $tq_operator != 'AND') $tq_operator = 'IN';
 				if ($relation == 'and') {
 					if ($tq_operator == 'AND') {
-						$query_restrictions .= " AND doc IN (
+						$query_restrictions .= " AND relevanssi.doc IN (
 							SELECT ID FROM $wpdb->posts WHERE 1=1 
 							AND (
 								SELECT COUNT(1) 
-								FROM $wpdb->_term_relationships 
-								WHERE term_taxonomy_id IN ($term_tax_id) 
-								AND object_id = $wpdb->posts.ID ) = $n
+								FROM $wpdb->term_relationships AS tr
+								WHERE tr.term_taxonomy_id IN ($term_tax_id) 
+								AND tr.object_id = $wpdb->posts.ID ) = $n
 							)";
+						// Clean: $term_tax_id and $n are Relevanssi-generated
 					}
 					else {
-						$query_restrictions .= " AND doc $tq_operator (SELECT DISTINCT(object_id) FROM $wpdb->term_relationships
-						WHERE term_taxonomy_id IN ($term_tax_id))";
+						$query_restrictions .= " AND relevanssi.doc $tq_operator (SELECT DISTINCT(tr.object_id) FROM $wpdb->term_relationships AS tr
+						WHERE tr.term_taxonomy_id IN ($term_tax_id))";
+						// Clean: all variables are Relevanssi-generated
 					}
 				}
 				else {
@@ -183,44 +185,66 @@ function relevanssi_search($q, $tax_query = NULL, $relation = NULL, $post_query 
 			$term_tax_ids = array_unique($term_tax_ids);
 			if (count($term_tax_ids) > 0) {
 				$term_tax_ids = implode(',', $term_tax_ids);
-				$query_restrictions .= " AND doc IN (SELECT DISTINCT(object_id) FROM $wpdb->term_relationships
-			    	WHERE term_taxonomy_id IN ($term_tax_ids))";
+				$query_restrictions .= " AND relevanssi.doc IN (SELECT DISTINCT(tr.object_id) FROM $wpdb->term_relationships AS tr
+			    	WHERE tr.term_taxonomy_id IN ($term_tax_ids))";
+			    // Clean: all variables are Relevanssi-generated
 			}
 			if (count($not_term_tax_ids) > 0) {
 				$not_term_tax_ids = implode(',', $not_term_tax_ids);
-				$query_restrictions .= " AND doc NOT IN (SELECT DISTINCT(object_id) FROM $wpdb->term_relationships
-			    	WHERE term_taxonomy_id IN ($not_term_tax_ids))";
+				$query_restrictions .= " AND relevanssi.doc NOT IN (SELECT DISTINCT(tr.object_id) FROM $wpdb->term_relationships AS tr
+			    	WHERE tr.term_taxonomy_id IN ($not_term_tax_ids))";
+			    // Clean: all variables are Relevanssi-generated
 			}
 			if (count($and_term_tax_ids) > 0) {
 				$and_term_tax_ids = implode(',', $and_term_tax_ids);
 				$n = count(explode(',', $and_term_tax_ids));
-				$query_restrictions .= " AND doc IN (
-					SELECT ID FROM $wpdb->posts WHERE 1=1 
+				$query_restrictions .= " AND relevanssi.doc IN (
+					SELECT ID FROM $wpdb->posts AS posts WHERE 1=1 
 					AND (
 						SELECT COUNT(1) 
-						FROM $wpdb->term_relationships 
-						WHERE term_taxonomy_id IN ($and_term_tax_ids) 
-						AND object_id = $wpdb->posts.ID ) = $n
+						FROM $wpdb->term_relationships AS tr
+						WHERE tr.term_taxonomy_id IN ($and_term_tax_ids) 
+						AND tr.object_id = $wpdb->posts.ID ) = $n
 					)";
+			    // Clean: all variables are Relevanssi-generated
 			}
 		}
 	}
 	
 	if (is_array($post_query)) {
 		if (!empty($post_query['in'])) {
-			$posts = implode(',', $post_query['in']);
-			$query_restrictions .= " AND doc IN ($posts)";
+			$valid_values = array();
+			foreach($post_query['in'] as $post_in_id) {
+				if (is_numeric($post_in_id)) $valid_values[] = $post_in_id;
+			}
+			$posts = implode(',', $valid_values);
+			if (!empty($posts)) $query_restrictions .= " AND relevanssi.doc IN ($posts)";
+			// Clean: $posts is checked to be integers
 		}
 		if (!empty($post_query['not in'])) {
-			$posts = implode(',', $post_query['not in']);
-			$query_restrictions .= " AND doc NOT IN ($posts)";
+			$valid_values = array();
+			foreach($post_query['not in'] as $post_not_in_id) {
+				if (is_numeric($post_not_in_id)) $valid_values[] = $post_not_in_id;
+			}
+			$posts = implode(',', $valid_values);
+			if (!empty($posts)) $query_restrictions .= " AND relevanssi.doc NOT IN ($posts)";
+			// Clean: $posts is checked to be integers
 		}
 	}
 
 	if (is_array($meta_query)) {
-		foreach ($meta_query as $meta) {
+		isset($meta_query['relation']) ? $meta_relation = strtoupper($meta_query['relation']) : $meta_relation = strtoupper(apply_filters('relevanssi_default_meta_query_relation', 'AND'));
+		if ($meta_relation != 'AND' && $meta_relation != 'OR') $meta_relation = "AND";
+		// legal values: AND and OR
+
+		$meta_query_restrictions = "";
+		foreach ($meta_query as $array_key => $meta) {
+			if ($array_key === 'relation') {
+				continue;
+			}
+		
 			if (!empty($meta['key'])) {
-				$key = "meta_key = '" . $meta['key'] . "'";
+				$key = "postmeta.meta_key = '" . esc_sql($meta['key']) . "'";
 			}
 			else {
 				$key = '';
@@ -230,53 +254,84 @@ function relevanssi_search($q, $tax_query = NULL, $relation = NULL, $post_query 
 			
 			if (isset($meta['type'])) {
 				if (strtoupper($meta['type']) == 'NUMERIC') $meta['type'] = "SIGNED";
-				$meta_value = "CAST(meta_value AS " . $meta['type'] . ")";
+				if (!in_array(strtoupper($meta['type']), array('NUMERIC', 'BINARY', 'CHAR', 'DATE', 'DATETIME', 'DECIMAL', 'SIGNED', 'TIME', 'UNSIGNED'))) {
+					// illegal value
+					$meta_value = 'postmeta.meta_value';
+				}
+				else {
+					// legal value
+					$meta_value = "CAST(postmeta.meta_value AS " . $meta['type'] . ")";
+				}
 			}
 			else {
-				$meta_value = 'meta_value';
+				$meta_value = 'postmeta.meta_value';
 			}
 
 			if ($compare == 'BETWEEN' || $compare == 'NOT BETWEEN') {
 				if (!is_array($meta['value'])) continue;
 				if (count($meta['value']) < 2) continue;
 				$compare == 'BETWEEN' ? $compare = "IN" : $compare = "NOT IN";
-				$low_value = $meta['value'][0];
-				$high_value = $meta['value'][1];
+				$low_value = esc_sql($meta['value'][0]);
+				$high_value = esc_sql($meta['value'][1]);
+				// No need to check that low is lower than high, because the meta query
+				// doesn't work, if the values are wrong.
+				
 				!empty($key) ? $and = " AND " : $and = "";
-				$query_restrictions .= " AND doc $compare (
-					SELECT DISTINCT(post_id) FROM $wpdb->postmeta
+				$meta_query_restrictions .= " $meta_relation relevanssi.doc $compare (
+					SELECT DISTINCT(postmeta.post_id) FROM $wpdb->postmeta AS postmeta
 					WHERE $key $and $meta_value BETWEEN $low_value AND $high_value)";
+				// Clean: values either Relevanssi-generated or escaped
 			}
 			else if ($compare == 'EXISTS' || $compare == 'NOT EXISTS') {
 				$compare == 'EXISTS' ? $compare = "IN" : $compare = "NOT IN";
-				$query_restrictions .= " AND doc $compare (
-					SELECT DISTINCT(post_id) FROM $wpdb->postmeta
+				$meta_query_restrictions .= " $meta_relation relevanssi.doc $compare (
+					SELECT DISTINCT(postmeta.post_id) FROM $wpdb->postmeta AS postmeta
 					WHERE $key)";
+				// Clean: values either Relevanssi-generated or escaped
 			}
 			else if ($compare == 'IN' || $compare == 'NOT IN') {
 				if (!is_array($meta['value'])) continue;
 				$values = array();
 				foreach ($meta['value'] as $value) {
+					$value = esc_sql($value);
 					$values[] = "'$value'";
 				}
 				$values = implode(',', $values);
 				!empty($key) ? $and = " AND " : $and = "";
-				$query_restrictions .= " AND doc IN (
-					SELECT DISTINCT(post_id) FROM $wpdb->postmeta
+				$meta_query_restrictions .= " $meta_relation relevanssi.doc IN (
+					SELECT DISTINCT(postmeta.post_id) FROM $wpdb->postmeta AS postmeta
 					WHERE $key $and $meta_value $compare ($values))";
+				// Clean: values either Relevanssi-generated or escaped
 			}
 			else {
-				isset($meta['value']) ? $value = " $meta_value " . $meta['compare'] . " '" . $meta['value'] . "' " : $value = '';
+				isset($meta['value']) ? $value = " " . esc_sql($meta_value) . " " . $meta['compare'] . " '" . esc_sql($meta['value']) . "' " : $value = '';
 				(!empty($key) && !empty($value)) ? $and = " AND " : $and = "";
 				if (empty($key) && empty($and) && empty($value)) {
 					// do nothing
 				}
 				else {
-					$query_restrictions .= " AND doc IN (
-						SELECT DISTINCT(post_id) FROM $wpdb->postmeta
+					$meta_query_restrictions .= " $meta_relation relevanssi.doc IN (
+						SELECT DISTINCT(postmeta.post_id) FROM $wpdb->postmeta AS postmeta
 						WHERE $key $and $value)";
+					// Clean: values either Relevanssi-generated or escaped
 				}
 			}
+		}
+		
+		if ($meta_relation == 'OR') {
+			$meta_query_restrictions = substr($meta_query_restrictions, 3); // strip the first OR
+			$meta_query_restrictions = "AND (" . $meta_query_restrictions . ") ";
+		}
+		$query_restrictions .= $meta_query_restrictions;
+	}
+
+	if (!empty($date_query)) {
+		if (is_object($date_query) && method_exists($date_query, 'get_sql')) {
+			$sql = $date_query->get_sql();
+			$sql = str_replace(' AND ( (', '', $sql); 	// this is not needed
+			$sql = substr($sql, 0, strlen($sql) - 2);	// to remove the final ")"
+			$query_restrictions .= " AND relevanssi.doc IN ( SELECT DISTINCT(ID) FROM $wpdb->posts WHERE $sql";
+			// Clean: $sql generated by $date_query->get_sql() query
 		}
 	}
 
@@ -287,35 +342,47 @@ function relevanssi_search($q, $tax_query = NULL, $relation = NULL, $post_query 
 			$post_type = implode(',', array_merge($pt_1, $pt_2));
 		}
 	}
-	
+
 	if ($post_type) {
+		if ($post_type == -1) $post_type = null; // Facetious sets post_type to -1 if not selected
 		if (!is_array($post_type)) {
-			$post_types = explode(',', $post_type);
+			$post_types = esc_sql(explode(',', $post_type));
 		}
 		else {
-			$post_types = $post_type;
+			$post_types = esc_sql($post_type);
 		}
-		$pt_array = array();
-		foreach ($post_types as $pt) {
-			$pt = "'" . trim(mysql_real_escape_string($pt)) . "'";
-			array_push($pt_array, $pt);
+		$post_type = count($post_types) ? "'" . implode( "', '", $post_types) . "'" : 'NULL';
+	}
+
+	if ($post_status) {
+		if (!is_array($post_status)) {
+			$post_statuses = esc_sql(explode(',', $post_status));
 		}
-		$post_type = implode(",", $pt_array);
+		else {
+			$post_statuses = esc_sql($post_status);
+		}
+
+		$post_status = count($post_statuses) ? "'" . implode( "', '", $post_statuses) . "'" : 'NULL';
 	}
 
 	//Added by OdditY:
 	//Exclude Post_IDs (Pages) for non-admin search ->
 	$postex = '';
-	if ($expost) {
+	if (!empty($expost)) {
 		if ($expost != "") {
 			$aexpids = explode(",",$expost);
 			foreach ($aexpids as $exid){
-				$exid = $wpdb->escape(trim($exid, ' -'));
-				$postex .= " AND doc !='$exid'";
+				$exid = esc_sql(trim($exid, ' -'));
+				$postex .= " AND relevanssi.doc != '$exid'";
+				// Clean: escaped
 			}
 		}	
 	}
 	// <- OdditY End
+
+	if ($expost) { //added by OdditY
+		$query_restrictions .= $postex;
+	}
 
 	$remove_stopwords = true;
 	$phrases = relevanssi_recognize_phrases($q);
@@ -349,7 +416,8 @@ function relevanssi_search($q, $tax_query = NULL, $relation = NULL, $post_query 
 		}
 	}
 	
-	$D = $wpdb->get_var("SELECT COUNT(DISTINCT(doc)) FROM $relevanssi_table");
+	$D = $wpdb->get_var("SELECT COUNT(DISTINCT(relevanssi.doc)) FROM $relevanssi_table AS relevanssi");
+	// Clean: no external inputs
 	
 	$total_hits = 0;
 		
@@ -363,19 +431,17 @@ function relevanssi_search($q, $tax_query = NULL, $relation = NULL, $post_query 
 
 	$fuzzy = get_option('relevanssi_fuzzy');
 
-	if ($expost) { //added by OdditY
-		$query_restrictions .= $postex;
-	}
-
 	if (function_exists('relevanssi_negatives_positives')) {	
 		$query_restrictions .= relevanssi_negatives_positives($negative_terms, $positive_terms, $relevanssi_table);
+		// Clean: escaped in the function
 	}
 
 	if (!empty($author)) {
 		$author_in = array();
 		$author_not_in = array();
 		foreach ($author as $id) {
-			if ($id >= 0) {
+			if (!is_numeric($id)) continue;
+			if ($id > 0) {
 				$author_in[] = $id;
 			}
 			else {
@@ -384,24 +450,34 @@ function relevanssi_search($q, $tax_query = NULL, $relation = NULL, $post_query 
 		}
 		if (count($author_in) > 0) {
 			$authors = implode(',', $author_in);
-			$query_restrictions .= " AND doc IN (SELECT DISTINCT(ID) FROM $wpdb->posts
-			    WHERE post_author IN ($authors))";
+			$query_restrictions .= " AND relevanssi.doc IN (SELECT DISTINCT(posts.ID) FROM $wpdb->posts AS posts
+			    WHERE posts.post_author IN ($authors))";
+			// Clean: $authors is always just numbers
 		}
 		if (count($author_not_in) > 0) {
 			$authors = implode(',', $author_not_in);
-			$query_restrictions .= " AND doc NOT IN (SELECT DISTINCT(ID) FROM $wpdb->posts
-			    WHERE post_author IN ($authors))";
+			$query_restrictions .= " AND relevanssi.doc NOT IN (SELECT DISTINCT(posts.ID) FROM $wpdb->posts AS posts
+			    WHERE posts.post_author IN ($authors))";
+			// Clean: $authors is always just numbers
 		}
 	}
 	
 	if ($post_type) {
 		// the -1 is there to get user profiles and category pages
-		$query_restrictions .= " AND ((doc IN (SELECT DISTINCT(ID) FROM $wpdb->posts
-			WHERE post_type IN ($post_type))) OR (doc = -1))";
+		$query_restrictions .= " AND ((relevanssi.doc IN (SELECT DISTINCT(posts.ID) FROM $wpdb->posts AS posts
+			WHERE posts.post_type IN ($post_type))) OR (doc = -1))";
+		// Clean: $post_type is escaped
+	}
+
+	if ($post_status) {
+		$query_restrictions .= " AND ((relevanssi.doc IN (SELECT DISTINCT(posts.ID) FROM $wpdb->posts AS posts
+			WHERE posts.post_status IN ($post_status))))";
+		// Clean: $post_status is escaped
 	}
 	
 	if ($phrases) {
-		$query_restrictions .= " AND doc IN ($phrases)";
+		$query_restrictions .= " AND relevanssi.doc IN ($phrases)";
+		// Clean: $phrases is escaped earlier
 	}
 
 	if (isset($_REQUEST['by_date'])) {
@@ -431,19 +507,21 @@ function relevanssi_search($q, $tax_query = NULL, $relation = NULL, $post_query 
 		$n = preg_replace('/[hdmyw]/', '', $n);
 
 		if (is_numeric($n)) {
-			$query_restrictions .= " AND doc IN (SELECT DISTINCT(ID) FROM $wpdb->posts
-				WHERE post_date > DATE_SUB(NOW(), INTERVAL $n $unit))";
+			$query_restrictions .= " AND relevanssi.doc IN (SELECT DISTINCT(posts.ID) FROM $wpdb->posts AS posts
+				WHERE posts.post_date > DATE_SUB(NOW(), INTERVAL $n $unit))";
+			// Clean: $n is always numeric, $unit is Relevanssi-generated
 		}
 	}
 
 	$query_restrictions = apply_filters('relevanssi_where', $query_restrictions); // Charles St-Pierre
+	$query_join = apply_filters('relevanssi_join', '');
 
 	$no_matches = true;
 	if ("always" == $fuzzy) {
-		$o_term_cond = apply_filters('relevanssi_fuzzy_query', "(term LIKE '#term#%' OR term_reverse LIKE CONCAT(REVERSE('#term#'), '%')) ");
+		$o_term_cond = apply_filters('relevanssi_fuzzy_query', "(relevanssi.term LIKE '#term#%' OR relevanssi.term_reverse LIKE CONCAT(REVERSE('#term#'), '%')) ");
 	}
 	else {
-		$o_term_cond = " term = '#term#' ";
+		$o_term_cond = " relevanssi.term = '#term#' ";
 	}
 
 	$post_type_weights = get_option('relevanssi_post_type_weights');
@@ -465,15 +543,18 @@ function relevanssi_search($q, $tax_query = NULL, $relation = NULL, $post_query 
 
 	do {
 		foreach ($terms as $term) {
+			$term = trim($term);	// numeric search terms will start with a space
 			if (strlen($term) < $min_length) continue;
-			$term = $wpdb->escape(like_escape($term));
+			$term = like_escape(esc_sql($term));
 			$term_cond = str_replace('#term#', $term, $o_term_cond);		
 			
 			!empty($post_type_weights['post_tag']) ? $tag = $post_type_weights['post_tag'] : $tag = $relevanssi_variables['post_type_weight_defaults']['post_tag'];
 			!empty($post_type_weights['category']) ? $cat = $post_type_weights['category'] : $cat = $relevanssi_variables['post_type_weight_defaults']['category'];
 
-			$query = "SELECT *, title * $title_boost + content + comment * $comment_boost + tag * $tag + link * $link_boost + author + category * $cat + excerpt + taxonomy + customfield + mysqlcolumn AS tf 
-					  FROM $relevanssi_table WHERE $term_cond $query_restrictions";
+			$query = "SELECT relevanssi.*, relevanssi.title * $title_boost + relevanssi.content + relevanssi.comment * $comment_boost + relevanssi.tag * $tag + relevanssi.link * $link_boost + relevanssi.author + relevanssi.category * $cat + relevanssi.excerpt + relevanssi.taxonomy + relevanssi.customfield + relevanssi.mysqlcolumn AS tf 
+					  FROM $relevanssi_table AS relevanssi $query_join WHERE $term_cond $query_restrictions";
+			// Clean: $query_restrictions is escaped, $term_cond is escaped
+			
 			$query = apply_filters('relevanssi_query_filter', $query);
 
 			$matches = $wpdb->get_results($query);
@@ -485,8 +566,9 @@ function relevanssi_search($q, $tax_query = NULL, $relation = NULL, $post_query 
 				$no_matches = false;
 				if (count($include_these_posts) > 0) {
 					$post_ids_to_add = implode(',', array_keys($include_these_posts));
-					$query = "SELECT *, title * $title_boost + content + comment * $comment_boost + tag * $tag + link * $link_boost + author + category * $cat + excerpt + taxonomy + customfield + mysqlcolumn AS tf 
-						  FROM $relevanssi_table WHERE doc IN ($post_ids_to_add) AND $term_cond";
+					$query = "SELECT relevanssi.*, relevanssi.title * $title_boost + relevanssi.content + relevanssi.comment * $comment_boost + relevanssi.tag * $tag + relevanssi.link * $link_boost + relevanssi.author + relevanssi.category * $cat + relevanssi.excerpt + relevanssi.taxonomy + relevanssi.customfield + relevanssi.mysqlcolumn AS tf 
+						  FROM $relevanssi_table AS relevanssi WHERE relevanssi.doc IN ($post_ids_to_add) AND $term_cond";
+					// Clean: no unescaped user inputs
 					$matches_to_add = $wpdb->get_results($query);
 					$matches = array_merge($matches, $matches_to_add);
 				}
@@ -497,14 +579,16 @@ function relevanssi_search($q, $tax_query = NULL, $relation = NULL, $post_query 
 
 			$total_hits += count($matches);
 	
-			$query = "SELECT COUNT(DISTINCT(doc)) FROM $relevanssi_table WHERE $term_cond $query_restrictions";
+			$query = "SELECT COUNT(DISTINCT(relevanssi.doc)) FROM $relevanssi_table AS relevanssi $query_join WHERE $term_cond $query_restrictions";
+			// Clean: $query_restrictions is escaped, $term_cond is escaped
 			$query = apply_filters('relevanssi_df_query_filter', $query);
 	
 			$df = $wpdb->get_var($query);
 	
 			if ($df < 1 && "sometimes" == $fuzzy) {
-				$query = "SELECT COUNT(DISTINCT(doc)) FROM $relevanssi_table
-					WHERE (term LIKE '$term%' OR term_reverse LIKE CONCAT(REVERSE('$term), %')) $query_restrictions";
+				$query = "SELECT COUNT(DISTINCT(relevanssi.doc)) FROM $relevanssi_table AS relevanssi $query_join
+					WHERE (relevanssi.term LIKE '$term%' OR relevanssi.term_reverse LIKE CONCAT(REVERSE('$term), %')) $query_restrictions";
+				// Clean: $query_restrictions is escaped, $term is escaped
 				$query = apply_filters('relevanssi_df_query_filter', $query);
 				$df = $wpdb->get_var($query);
 			}
@@ -587,12 +671,15 @@ function relevanssi_search($q, $tax_query = NULL, $relation = NULL, $post_query 
 
 				$post_ok = true;
 				$post_ok = apply_filters('relevanssi_post_ok', $post_ok, $match->doc);
-				
+		
 				if ($post_ok) {
 					$doc_terms[$match->doc][$term] = true; // count how many terms are matched to a doc
 					isset($doc_weight[$match->doc]) ? $doc_weight[$match->doc] += $match->weight : $doc_weight[$match->doc] = $match->weight;
 					isset($scores[$match->doc]) ? $scores[$match->doc] += $match->weight : $scores[$match->doc] = $match->weight;
-					$include_these_posts[$match->doc] = true;
+					if (is_numeric($match->doc)) {
+						// this is to weed out taxonomies and users (t_XXX, u_XXX)
+						$include_these_posts[$match->doc] = true;
+					}
 				}
 			}
 		}
@@ -646,10 +733,9 @@ function relevanssi_search($q, $tax_query = NULL, $relation = NULL, $post_query 
 
 	if (count($hits) < 1) {
 		if ($operator == "AND" AND get_option('relevanssi_disable_or_fallback') != 'on') {
-			$return = relevanssi_search($q, $o_tax_query, $o_relation,
-				$o_post_query, $o_meta_query,
-				$o_expost, $o_post_type,
-				"OR", $o_search_blogs, $o_author);
+			$or_args = $args;
+			$or_args['operator'] = "OR";
+			$return = relevanssi_search($or_args);
 			extract($return);
 		}
 	}
@@ -687,9 +773,6 @@ function relevanssi_do_query(&$query) {
 	else
 		$q = trim(stripslashes(strtolower($query->query_vars["s"])));
 
-	$cache = get_option('relevanssi_enable_cache');
-	$cache == 'on' ? $cache = true : $cache = false;
-
 	if (isset($query->query_vars['searchblogs'])) {
 		$search_blogs = $query->query_vars['searchblogs'];
 
@@ -708,13 +791,31 @@ function relevanssi_do_query(&$query) {
 	else {
 		$tax_query = array();
 		$tax_query_relation = apply_filters('relevanssi_default_tax_query_relation', 'OR');
+		if (isset($query->tax_query) && empty($query->tax_query->queries)) {
+			// Tax query is empty, let's get rid of it.
+			$query->tax_query = null;
+		}
 		if (isset($query->query_vars['tax_query'])) {
+			// This is user-created tax_query array as described in WP Codex
 			foreach ($query->query_vars['tax_query'] as $type => $item) {
 				if (is_string($type) && $type == 'relation') {
 					$tax_query_relation = $item;
 				}
 				else {
 					$tax_query[] = $item;
+				}
+			}
+		}
+		else if (isset($query->tax_query)) {
+			// This is the WP-created Tax_Query object, which is different from above
+			foreach ($query->tax_query as $type => $item) {
+				if (is_string($type) && $type == 'relation') {
+					$tax_query_relation = $item;
+				}
+				if (is_string($type) && $type == 'queries') {
+					foreach ($item as $tax_query_row) {
+						$tax_query[] = $tax_query_row;
+					}
 				}
 			}
 		}
@@ -769,6 +870,9 @@ function relevanssi_do_query(&$query) {
 			if (!empty($query->query_vars['tag_id'])) {
 				$tax_query[] = array('taxonomy' => 'post_tag', 'field' => 'id', 'terms' => $query->query_vars['tag_id']);
 			}
+			if (!empty($query->query_vars['tag_id'])) {
+				$tax_query[] = array('taxonomy' => 'post_tag', 'field' => 'id', 'terms' => $query->query_vars['tag_id']);
+			}
 			if (!empty($query->query_vars['tag__in'])) {
 				$tax_query[] = array('taxonomy' => 'post_tag', 'field' => 'id', 'terms' => $query->query_vars['tag__in']);
 			}
@@ -790,7 +894,11 @@ function relevanssi_do_query(&$query) {
 			if (!empty($query->query_vars['tag_slug__and'])) {
 				$tax_query[] = array('taxonomy' => 'post_tag', 'field' => 'slug', 'terms' => $query->query_vars['tag_slug__and'], 'operator' => 'AND');
 			}
-
+			$extag = get_option('relevanssi_extag');
+			if (isset($extag) && $extag != 0) {
+				$tax_query[] = array('taxonomy' => 'post_tag', 'field' => 'id', 'terms' => $extag, 'operator' => 'NOT IN');
+			}
+			
 			if (isset($query->query_vars["taxonomy"])) {
 				if (function_exists('relevanssi_process_taxonomies')) {
 					$tax_query = relevanssi_process_taxonomies($query->query_vars["taxonomy"], $query->query_vars["term"], $tax_query);
@@ -804,7 +912,7 @@ function relevanssi_do_query(&$query) {
 		}
 
 		$author = false;
-		if (isset($query->query_vars["author"])) {
+		if (!empty($query->query_vars["author"])) {
 			$author = explode(',', $query->query_vars["author"]);
 		}
 		if (!empty($query->query_vars["author_name"])) {
@@ -813,6 +921,12 @@ function relevanssi_do_query(&$query) {
 		}
 		
 		$post_query = array();
+		if (!empty($query->query_vars['p'])) {
+			$post_query = array('in' => array($query->query_vars['p']));
+		}
+		if (!empty($query->query_vars['page_id'])) {
+			$post_query = array('in' => array($query->query_vars['page_id']));
+		}
 		if (!empty($query->query_vars['post__in'])) {
 			$post_query = array('in' => $query->query_vars['post__in']);
 		}
@@ -821,6 +935,8 @@ function relevanssi_do_query(&$query) {
 		}
 
 		$meta_query = array();
+		$meta_query_relation = apply_filters('relevanssi_default_meta_query_relation', 'AND');
+
 		if (!empty($query->query_vars["meta_query"])) {
 			$meta_query = $query->query_vars["meta_query"];
 		}
@@ -838,7 +954,11 @@ function relevanssi_do_query(&$query) {
 			$meta_query[] = array('key' => $query->query_vars["meta_key"], 'value' => $value, 'compare' => $compare);
 		}
 
-	
+		$date_query = false;
+		if (!empty($query->date_query)) {
+			$date_query = new WP_Date_Query($query->date_query);
+		}
+			
 		$search_blogs = false;
 		if (isset($query->query_vars["search_blogs"])) {
 			$search_blogs = $query->query_vars["search_blogs"];
@@ -852,12 +972,20 @@ function relevanssi_do_query(&$query) {
 			$post_type = $query->query_vars["post_types"];
 		}
 	
-		$expids = get_option("relevanssi_exclude_posts");
+		if ($post_type == -1) $post_type = false;
+
+		$post_status = false;	
+		if (isset($query->query_vars["post_status"]) && $query->query_vars["post_status"] != 'any') {
+			$post_status = $query->query_vars["post_status"];
+		}
+
+		$expost = get_option("relevanssi_exclude_posts");
 	
 		if (is_admin()) {
 			// in admin search, search everything
 			$excat = null;
-			$expids = null;
+			$extag = null;
+			$expost = null;
 		}
 
 		$operator = "";
@@ -874,65 +1002,26 @@ function relevanssi_do_query(&$query) {
 		// This is done here so the new terms will get highlighting
 		if ("OR" == $operator) {
 			// Synonyms are only used in OR queries
-			$synonym_data = get_option('relevanssi_synonyms');
-			if ($synonym_data) {
-				$synonyms = array();
-				if (function_exists('mb_strtolower')) {
-					$synonym_data = mb_strtolower($synonym_data);
-				}
-				else {
-					$synonym_data = strtolower($synonym_data);
-				}
-				$pairs = explode(";", $synonym_data);
-				foreach ($pairs as $pair) {
-					$parts = explode("=", $pair);
-					$key = strval(trim($parts[0]));
-					$value = trim($parts[1]);
-					$synonyms[$key][$value] = true;
-				}
-				if (count($synonyms) > 0) {
-					$new_terms = array();
-					$terms = array_keys(relevanssi_tokenize($q, false)); // remove stopwords is false here
-					$terms[] = $q;
-					foreach ($terms as $term) {
-						if (in_array(strval($term), array_keys($synonyms))) {		// strval, otherwise numbers cause problems
-							if (isset($synonyms[strval($term)])) {		// necessary, otherwise terms like "02" can cause problems
-								$new_terms = array_merge($new_terms, array_keys($synonyms[strval($term)]));
-							}
-						}
-					}
-					if (count($new_terms) > 0) {
-						foreach ($new_terms as $new_term) {
-							$q .= " $new_term";
-						}
-					}
-				}
-			}
+			$q = relevanssi_add_synonyms($q);
 		}
 	
-		if ($cache) {
-			$params = md5(serialize(array($q, $tax_query, $tax_query_relation, $post_query, $meta_query, $expids, $post_type, $operator, $search_blogs, $author, $orderby, $order)));
-			$return = relevanssi_fetch_hits($params);
-			if (!$return) {
-				$return = relevanssi_search($q, $tax_query, $tax_query_relation, $post_query, $meta_query, $expids, $post_type, $operator, $search_blogs, $author, $orderby, $order);
-				$return_ser = serialize($return);
-				relevanssi_store_hits($params, $return_ser);
-			}
-		}
-		else {
-			$return = relevanssi_search($q,
-										$tax_query,
-										$tax_query_relation, 
-										$post_query,
-										$meta_query, 
-										$expids,
-										$post_type,
-										$operator,
-										$search_blogs,
-										$author,
-										$orderby,
-										$order);
-		}
+		$search_params = array(
+			'q' => $q,
+			'tax_query' => $tax_query,
+			'tax_query_relation' => $tax_query_relation, 
+			'post_query' => $post_query,
+			'meta_query' => $meta_query, 
+			'date_query' => $date_query,
+			'expost' => $expost,
+			'post_type' => $post_type,
+			'post_status' => $post_status,
+			'operator' => $operator,
+			'search_blogs' => $search_blogs,
+			'author' => $author,
+			'orderby' => $orderby,
+			'order' => $order);
+	
+		$return = relevanssi_search($search_params);
 	}
 
 	isset($return['hits']) ? $hits = $return['hits'] : $hits = array();
@@ -943,7 +1032,16 @@ function relevanssi_do_query(&$query) {
 	$hits = $hits_filters_applied[0];
 
 	$query->found_posts = sizeof($hits);
-	$query->max_num_pages = ceil(sizeof($hits) / $query->query_vars["posts_per_page"]);
+	if ($query->query_vars["posts_per_page"] == 0) {
+		// assume something sensible to prevent "division by zero error";
+		$query->query_vars["posts_per_page"] = -1;
+	}
+	if ($query->query_vars["posts_per_page"] == -1) {
+		$query->max_num_pages = sizeof($hits);
+	}
+	else {
+		$query->max_num_pages = ceil(sizeof($hits) / $query->query_vars["posts_per_page"]);
+	}
 
 	$update_log = get_option('relevanssi_log_queries');
 	if ('on' == $update_log) {
@@ -951,6 +1049,7 @@ function relevanssi_do_query(&$query) {
 	}
 
 	$make_excerpts = get_option('relevanssi_excerpts');
+	if ($query->is_admin) $make_excerpts = false;
 
 	if ($query->query_vars['paged'] > 0) {
 		$wpSearch_low = ($query->query_vars['paged'] - 1) * $query->query_vars["posts_per_page"];
@@ -989,35 +1088,27 @@ function relevanssi_do_query(&$query) {
 		//Added by OdditY - Highlight Result Title too -> 
 		if("on" == get_option('relevanssi_hilite_title')){
 			if (function_exists('qtrans_useCurrentLanguageIfNotFoundUseDefaultLanguage')) {
-				$post->post_title = strip_tags(qtrans_useCurrentLanguageIfNotFoundUseDefaultLanguage($post->post_title));
+				$post->post_highlighted_title = strip_tags(qtrans_useCurrentLanguageIfNotFoundUseDefaultLanguage($post->post_title));
 			}
 			else {
-				$post->post_title = strip_tags($post->post_title);
+				$post->post_highlighted_title = strip_tags($post->post_title);
 			}
 			$highlight = get_option('relevanssi_highlight');
 			if ("none" != $highlight) {
 				if (!is_admin()) {
-					$post->post_title = relevanssi_highlight_terms($post->post_title, $q);
+					$post->post_highlighted_title = relevanssi_highlight_terms($post->post_highlighted_title, $q);
 				}
 			}
 		}
-		// OdditY end <-			
+		// OdditY end <-
 		
 		if ('on' == $make_excerpts) {			
-			if ($cache) {
-				$post->post_excerpt = relevanssi_fetch_excerpt($post->ID, $q);
-				if ($post->post_excerpt == null) {
-					$post->post_excerpt = relevanssi_do_excerpt($post, $q);
-					relevanssi_store_excerpt($post->ID, $q, $post->post_excerpt);
-				}
-			}
-			else {
-				$post->post_excerpt = relevanssi_do_excerpt($post, $q);
-			}
+			$post->original_excerpt = $post->post_excerpt;
+			$post->post_excerpt = relevanssi_do_excerpt($post, $q);
+		}
 			
-			if ('on' == get_option('relevanssi_show_matches')) {
-				$post->post_excerpt .= relevanssi_show_matches($return, $post->ID);
-			}
+		if ('on' == get_option('relevanssi_show_matches')) {
+			$post->post_excerpt .= relevanssi_show_matches($return, $post->ID);
 		}
 		
 		if (isset($return['scores'][$post->ID])) $post->relevance_score = round($return['scores'][$post->ID], 2);

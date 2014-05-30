@@ -22,6 +22,10 @@ class W3_Widget_MaxCDN extends W3_Plugin {
      */
     private $api;
     function run() {
+        w3_require_once(W3TC_INC_FUNCTIONS_DIR . '/admin.php');
+        if(w3tc_get_current_wp_page() == 'w3tc_dashboard')
+            add_action('admin_enqueue_scripts', array($this,'enqueue'));
+
         add_action('w3tc_dashboard_setup', array(
             &$this,
             'wp_dashboard_setup'
@@ -62,14 +66,18 @@ class W3_Widget_MaxCDN extends W3_Plugin {
 
     function admin_head() {
         $zone_id = $this->_config->get_string('cdn.maxcdn.zone_id');
-        $zone_info = $this->api->get_pull_zone($zone_id);
-        if (!$zone_info)
-            return;
-        $filetypes = $this->api->get_list_of_file_types_per_zone($zone_id);
+        try {
+            $zone_info = $this->api->get_pull_zone($zone_id);
 
-        if (!isset($filetypes['filetypes']))
-            return;
+            if (!$zone_info)
+                return;
+            $filetypes = $this->api->get_list_of_file_types_per_zone($zone_id);
 
+            if (!isset($filetypes['filetypes']))
+                return;
+        } catch(Exception $ex) {
+            return;
+        }
         $filetypes = $filetypes['filetypes'];
         $group_hits = NetDNAPresentation::group_hits_per_filetype_group($filetypes);
 
@@ -104,11 +112,7 @@ echo "                ", implode(',', $list);
      * @return void
      */
     function wp_dashboard_setup() {
-        wp_enqueue_style('w3tc-widget');
-        wp_enqueue_script('w3tc-metadata');
-        wp_enqueue_script('w3tc-widget');
-
-            $view = '<span> </span>';
+        $view = '<span> </span>';
         w3tc_add_dashboard_widget('w3tc_maxcdn', $view, array(
             &$this,
             'widget_maxcdn'
@@ -121,32 +125,49 @@ echo "                ", implode(',', $list);
      * @param array $form_inputs
      */
     function widget_maxcdn($widget_id, $form_inputs = array()) {
+        w3_require_once(W3TC_INC_FUNCTIONS_DIR . '/ui.php');
         $authorized = $this->authorized;
         $have_zone = $this->have_zone;
-
+        $error = '';
+        $no_zone = $this->_config->get_integer('cdn.maxcdn.zone_id') == 0;
+        $is_sealed = $this->_sealed;
+        $pull_zones = array();
+        $zone_info = false;
         if ($this->authorized && $this->have_zone) {
             $zone_id = $this->_config->get_integer('cdn.maxcdn.zone_id');
-            $zone_info = $this->api->get_pull_zone($zone_id);
+
+            try{
+                $zone_info = $this->api->get_pull_zone($zone_id);
+            } catch(Exception $ex) {
+                $zone_info = false;
+                $error = $ex->getMessage();
+            }
+
             if ($zone_info) {
                 $content_zone = $zone_info['name'];
-                $summary = $this->api->get_stats_per_zone($zone_id);
-                $filetypes = $this->api->get_list_of_file_types_per_zone($zone_id);
-                $popular_files = $this->api->get_list_of_popularfiles_per_zone($zone_id);
-                $popular_files = NetDNAPresentation::format_popular($popular_files);
-                $popular_files = array_slice($popular_files, 0 , 5);
-                $account = $this->api->get_account();
-                $account_status = NetDNAPresentation::get_account_status($account['status']);
-                include W3TC_INC_WIDGET_DIR . '/maxcdn.php';
+                try {
+                    $summary = $this->api->get_stats_per_zone($zone_id);
+                    $filetypes = $this->api->get_list_of_file_types_per_zone($zone_id);
+                    $popular_files = $this->api->get_list_of_popularfiles_per_zone($zone_id);
+                    $popular_files = NetDNAPresentation::format_popular($popular_files);
+                    $popular_files = array_slice($popular_files, 0 , 5);
+                    $account = $this->api->get_account();
+                    $account_status = NetDNAPresentation::get_account_status($account['status']);
+                    include W3TC_INC_WIDGET_DIR . '/maxcdn.php';
+                } catch (Exception $ex) {
+                    $error = $ex->getMessage();
+                    try {
+                        $pull_zones = $this->api->get_zones_by_url(home_url());
+                    } catch(Exception $ex) {}
+                    include W3TC_INC_WIDGET_DIR . '/maxcdn_signup.php';
+                }
             } else {
-                $show_new = $this->_config->get_string('cdn.engine') != 'maxcdn';
-                $no_zone = $this->_config->get_integer('cdn.maxcdn.zone_id') == 0;
-                $is_sealed = $this->_sealed;
+                try {
+                    $pull_zones = $this->api->get_zones_by_url(home_url());
+                } catch(Exception $ex) {}
                 include W3TC_INC_WIDGET_DIR . '/maxcdn_signup.php';
             }
         } else {
-            $show_new = $this->_config->get_string('cdn.engine') != 'maxcdn';
-            $no_zone = $this->_config->get_integer('cdn.maxcdn.zone_id') == 0;
-            $is_sealed = $this->_sealed;
             include W3TC_INC_WIDGET_DIR . '/maxcdn_signup.php';
         }
     }
@@ -157,7 +178,15 @@ echo "                ", implode(',', $list);
     private function _setup($config) {
         $this->authorized = $config->get_string('cdn.maxcdn.authorization_key') != '' &&
             $config->get_string('cdn.engine') == 'maxcdn';
+        $keys = explode('+', $config->get_string('cdn.maxcdn.authorization_key'));
+        $this->authorized = $this->authorized  && sizeof($keys) == 3;
 
         $this->have_zone = $config->get_string('cdn.maxcdn.zone_id') != 0;
+    }
+
+    public function enqueue() {
+        wp_enqueue_style('w3tc-widget');
+        wp_enqueue_script('w3tc-metadata');
+        wp_enqueue_script('w3tc-widget');
     }
 }
